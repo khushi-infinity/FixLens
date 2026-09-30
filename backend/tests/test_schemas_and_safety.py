@@ -165,3 +165,28 @@ class TestSafetyPolicy:
         notice, level = apply_safety_policy(parse_diagnosis_payload(payload, Mode.PHOTO, "test"))
         assert level == SafetyLevel.HIGH
         assert notice.decision == SafetyDecision.SAFETY_STOP
+
+    def test_preventive_tip_over_degrades_to_limited(self):
+        """A missing screw whose only cited risk is a FUTURE tip-over is a
+        warning, not a professional referral. Regression: a laptop stand with
+        a missing screw was flagged hazardous because the model rated the
+        hypothetical future state instead of the present one."""
+        payload = _valid_payload(
+            issue_summary="The stand is missing one mounting screw.",
+            safety_level="HIGH",
+            safety_reason="A loose stand could eventually present a tip-over hazard.",
+        )
+        notice, level = apply_safety_policy(parse_diagnosis_payload(payload, Mode.PHOTO, "test"))
+        assert level == SafetyLevel.MEDIUM
+        assert notice.decision == SafetyDecision.LIMITED_GUIDE
+
+    def test_present_hazard_still_stops_despite_preventive_words(self):
+        """Preventive wording must not shield a real present-tense hazard."""
+        payload = _valid_payload(
+            issue_summary="Loose faceplate with exposed wiring behind it.",
+            safety_level="LOW",
+            safety_reason="Could eventually cause a shock if touched.",
+        )
+        notice, level = apply_safety_policy(parse_diagnosis_payload(payload, Mode.PHOTO, "test"))
+        assert level == SafetyLevel.HIGH
+        assert notice.decision == SafetyDecision.SAFETY_STOP

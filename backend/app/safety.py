@@ -53,6 +53,30 @@ MEDIUM_ESCALATION_PATTERNS = [
     r"wobbly .*(ladder|shelf|stand)",
 ]
 
+# A hazard that is PREVENTIVE (a future risk the model mentions) must never
+# by itself produce a full SAFETY_STOP on an ordinary object: the user needs a
+# warning, not a professional referral. Matched AFTER the HIGH gate: a corpus
+# that also contains a present-tense high-risk pattern still stops.
+PREVENTIVE_HAZARD_PATTERNS = [
+    r"tip[- ]?over",
+    r"could (eventually |become |present )",
+    r"might (eventually |become |present )",
+    r"risk of .*(later|over time|if not)",
+    r"in the (long|future)",
+]
+
+
+def _high_risk_present(corpus: str) -> bool:
+    """True only when a PRESENT-tense high-risk pattern matches the corpus."""
+    return _matches(corpus, HIGH_RISK_PATTERNS)
+
+
+def _preventive_only(corpus: str) -> bool:
+    """True when a preventive (future-risk) hazard pattern matches AND no
+    present-tense high-risk pattern does. Those cases degrade to limited
+    guidance instead of a safety stop: warn the user, do not freeze them."""
+    return _matches(corpus, PREVENTIVE_HAZARD_PATTERNS) and not _high_risk_present(corpus)
+
 
 def _matches(text: str, patterns) -> bool:
     return any(re.search(p, text, flags=re.IGNORECASE) for p in patterns)
@@ -80,6 +104,13 @@ def apply_safety_policy(diagnosis: DiagnosisResult) -> Tuple[SafetyNotice, Safet
 
     model_level = diagnosis.safety_level
     final_level = model_level
+
+    # A model that rates a preventive/future risk as HIGH on an ordinary
+    # object is over-cautious calibration, not a present hazard. Degrade to
+    # MEDIUM (limited guidance with the warning) instead of a safety stop.
+    # Genuine present-tense high-risk patterns still stop via the gate below.
+    if final_level == SafetyLevel.HIGH and _preventive_only(corpus):
+        final_level = SafetyLevel.MEDIUM
 
     # Deterministic escalation on known high-risk patterns.
     if _matches(corpus, HIGH_RISK_PATTERNS):
@@ -157,6 +188,11 @@ def apply_assembly_safety_policy(assembly: AssemblyPlan) -> Tuple[SafetyNotice, 
     )
 
     final_level = assembly.safety_level
+    # Same preventive-risk calibration as the diagnosis gate: a future risk on
+    # an ordinary object is a warning, not a stop. Present-tense patterns
+    # still escalate through the gate below.
+    if final_level == SafetyLevel.HIGH and _preventive_only(corpus):
+        final_level = SafetyLevel.MEDIUM
     if _matches(corpus, HIGH_RISK_PATTERNS):
         final_level = SafetyLevel.HIGH
 
