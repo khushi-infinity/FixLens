@@ -23,16 +23,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +46,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.fixlens.app.network.ComponentDto
@@ -89,6 +96,29 @@ fun DiagnosisResultScreen(
     val isSafetyStop = result.safety.decision.equals("SAFETY_STOP", ignoreCase = true)
     val needsBetterView = diag.needsBetterView && !diag.betterViewInstruction.isNullOrBlank()
 
+    // Multisensory parity with guided repair: the diagnosis speaks itself.
+    // One VoiceGuide per screen, shut down on dispose; same mute semantics
+    // (silence is a choice, a fresh screen starts with voice on).
+    val voiceContext = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val voice = remember { VoiceGuide(voiceContext) }
+    DisposableEffect(lifecycleOwner) {
+        onDispose { voice.shutdown() }
+    }
+    var voiceMuted by remember { mutableStateOf(false) }
+    val spokenSummary = remember(result) {
+        val issue = diag.issueSummary.replaceFirstChar { it.lowercase() }
+        when {
+            isSafetyStop ->
+                "I see ${diag.objectName}. I cannot help with this one. ${result.safety.userMessage}"
+            needsBetterView ->
+                "I see ${diag.objectName}, but I need a better view. ${diag.betterViewInstruction}"
+            else ->
+                "I see ${diag.objectName}. ${issue.replaceFirstChar { it.uppercase() }}. ${result.safety.userMessage}"
+        }
+    }
+    LaunchedEffect(result) { voice.speak(spokenSummary) }
+
     // Phase 8: the analysis result enters with a short rise-and-fade; the
     // safety icon pops in so the risk level lands visually as well as verbally.
     var entered by remember { mutableStateOf(false) }
@@ -115,16 +145,31 @@ fun DiagnosisResultScreen(
                 translationY = (1f - enterProgress) * 26.dp.toPx()
             },
     ) {
+        Row {
+            Text(
+                text = "FIELD NOTES / DIAGNOSIS",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(top = 16.dp, bottom = 10.dp),
+            )
+            // Voice guide mute toggle, same semantics as guided repair:
+            // re-tapping unmutes and re-speaks the summary.
+            IconButton(onClick = {
+                voiceMuted = !voiceMuted
+                voice.setMuted(voiceMuted)
+                if (!voiceMuted) voice.speak(spokenSummary)
+            }) {
+                Icon(
+                    imageVector = if (voiceMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                    contentDescription = if (voiceMuted) "Turn voice guide on" else "Turn voice guide off",
+                    tint = FixLensColors.Ink,
+                )
+            }
+        }
         // Phase 7: Demo Mode banner, the scripted result is never live AI.
         if (demo != null) {
             DemoBanner()
         }
-        Text(
-            text = "FIELD NOTES / DIAGNOSIS",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp, bottom = 10.dp),
-        )
 
         Column(
             modifier = Modifier

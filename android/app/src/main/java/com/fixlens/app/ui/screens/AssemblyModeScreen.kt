@@ -21,9 +21,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -348,6 +353,31 @@ private fun AssemblyPlanScreen(
     onRetry: () -> Unit,
 ) {
     val plan = response.assemblyPlan
+
+    // Voice parity with diagnosis and guided repair: the plan speaks itself,
+    // with the same mute toggle and dispose discipline.
+    val voiceContext = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val voice = remember { VoiceGuide(voiceContext) }
+    DisposableEffect(lifecycleOwner) {
+        onDispose { voice.shutdown() }
+    }
+    var voiceMuted by remember { mutableStateOf(false) }
+    val spokenSummary = remember(response) {
+        when {
+            response.status == AssemblyStatuses.BLOCKED_HIGH_RISK ->
+                "I cannot provide assembly instructions. ${response.safety.userMessage}"
+            plan != null && plan.orderConfident ->
+                "I found ${plan.parts.size} parts for ${plan.objectName}. " +
+                    "${plan.steps.size} assembly steps are ready."
+            plan != null ->
+                "I found ${plan.parts.size} parts for ${plan.objectName}, but I need a better view. " +
+                    (plan.requestedView ?: "")
+            else -> "Assembly planning is unavailable right now."
+        }
+    }
+    LaunchedEffect(response) { voice.speak(spokenSummary) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -355,12 +385,25 @@ private fun AssemblyPlanScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        Text(
-            text = "FIXLENS",
-            style = MaterialTheme.typography.labelLarge,
-            color = FixLensColors.MutedInk,
-            modifier = Modifier.padding(top = 16.dp, bottom = 10.dp),
-        )
+        Row {
+            Text(
+                text = "FIXLENS",
+                style = MaterialTheme.typography.labelLarge,
+                color = FixLensColors.MutedInk,
+                modifier = Modifier.weight(1f).padding(top = 16.dp, bottom = 10.dp),
+            )
+            IconButton(onClick = {
+                voiceMuted = !voiceMuted
+                voice.setMuted(voiceMuted)
+                if (!voiceMuted) voice.speak(spokenSummary)
+            }) {
+                Icon(
+                    imageVector = if (voiceMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                    contentDescription = if (voiceMuted) "Turn voice guide on" else "Turn voice guide off",
+                    tint = FixLensColors.Ink,
+                )
+            }
+        }
         Column(
             modifier = Modifier
                 .weight(1f)

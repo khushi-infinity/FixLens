@@ -21,8 +21,9 @@ no free-text surface anywhere in the app: the camera does the asking.
 > washes, serif editorial headings over a humanist sans body, and sketchy
 > hand-drawn target overlays drawn directly onto the camera view.
 >
-> **Interactive guidance:** every repair step speaks itself (on-device text
-> to speech with a header mute toggle), shows an animated **HOW IT MOVES**
+> **Interactive guidance:** the diagnosis, the assembly plan, and every
+> repair step speak themselves (on-device text to speech with a header mute
+> toggle), each step shows an animated **HOW IT MOVES**
 > diagram whose hand-drawn arrow matches the action verb (move, rotate,
 > press, lift, slide, fasten, place, apply), and confirms key moments with
 > haptics. Verification verdicts are spoken and felt. The pricing page is
