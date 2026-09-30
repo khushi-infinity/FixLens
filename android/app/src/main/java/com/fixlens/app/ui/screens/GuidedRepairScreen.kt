@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -226,6 +228,18 @@ private fun GuidedPlanScreen(
     // step completes on the user's own confirmation — never worded as verified.
     val verificationSkipped = remember(state.currentStepNumber) { mutableStateOf(false) }
 
+    // Voice guide: on-device TTS, one instance for the whole guided session.
+    val voiceContext = androidx.compose.ui.platform.LocalContext.current
+    val voice = remember { VoiceGuide(voiceContext) }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { voice.shutdown() }
+    }
+    // Silence the voice whenever the step view is left (verification camera,
+    // Show Me camera) — speech resumes fresh on the next step screen.
+    LaunchedEffect(state.phase, showMe) {
+        if (showMe || state.phase == EnginePhase.READY_FOR_VERIFICATION) voice.stop()
+    }
+
     if (!loaded) {
         ErrorState(
             title = "Repair plan unavailable",
@@ -319,6 +333,7 @@ private fun GuidedPlanScreen(
             objectName = state.plan.objectName,
             totalSteps = state.totalSteps,
             demo = demo,
+            voice = voice,
             onDone = onExit,
         )
 
@@ -336,6 +351,7 @@ private fun GuidedPlanScreen(
             warning = state.currentStep?.warning,
             expectedState = state.currentStep?.expectedState ?: "",
             safetyLevel = state.plan.safetyLevel,
+            voice = voice,
             showWhy = showWhy,
             demo = demo,
             onToggleWhy = { showWhy = !showWhy },
@@ -413,6 +429,7 @@ private fun StepView(
     warning: String?,
     expectedState: String,
     safetyLevel: String,
+    voice: VoiceGuide,
     showWhy: Boolean,
     demo: DemoContext? = null,
     onToggleWhy: () -> Unit,
@@ -421,6 +438,13 @@ private fun StepView(
     onDifficult: () -> Unit,
     onBack: () -> Unit,
 ) {
+    var voiceMuted by remember { mutableStateOf(false) }
+
+    // Voice guide: read the step aloud once per step (on-device TTS).
+    LaunchedEffect(stepNumber) {
+        voice.speak("Step $stepNumber of $totalSteps. $title. $action")
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -447,6 +471,19 @@ private fun StepView(
                     text = "Step $stepNumber of $totalSteps",
                     style = MaterialTheme.typography.titleMedium,
                     color = FixLensColors.Ink,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            // Voice guide mute toggle — on-device speech, never a network call.
+            IconButton(onClick = {
+                voiceMuted = !voiceMuted
+                voice.setMuted(voiceMuted)
+                if (!voiceMuted) voice.speak("Step $stepNumber of $totalSteps. $title. $action")
+            }) {
+                Icon(
+                    imageVector = if (voiceMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                    contentDescription = if (voiceMuted) "Turn voice guide on" else "Turn voice guide off",
+                    tint = FixLensColors.Ink,
                 )
             }
             // Phase 8: the scripted result must never pass for live AI —
@@ -481,6 +518,8 @@ private fun StepView(
                 style = MaterialTheme.typography.titleMedium,
                 color = FixLensColors.Terracotta,
             )
+
+            StepIllustration(action = action)
 
             GuidedCard(title = "01 / YOUR NEXT MOVE") {
                 Text(instruction, style = MaterialTheme.typography.bodyMedium, color = FixLensColors.Ink)
@@ -688,7 +727,11 @@ private fun CompletionView(
     totalSteps: Int,
     onDone: () -> Unit,
     demo: DemoContext? = null,
+    voice: VoiceGuide? = null,
 ) {
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        voice?.speak(message)
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
