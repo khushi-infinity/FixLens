@@ -4,6 +4,14 @@ Repo: https://github.com/khushi-infinity/FixLens · Android (Kotlin + Jetpack Co
 
 ---
 
+## Built with (tags, paste as comma-separated list)
+
+```
+Kotlin, Jetpack Compose, Material 3, CameraX, RevenueCat, Google Gemini, FastAPI, Python, OpenRouter, OkHttp, kotlinx.serialization, Android TextToSpeech, Pydantic, Pillow, Uvicorn, REST API, Gradle, pytest
+```
+
+Ordering rationale: languages and UI framework first (judges scan left to right), then the monetization and AI hooks RevenueCat organizers look for, then backend stack, then supporting libraries. All entries are real and verified in `android/gradle/libs.versions.toml` and `backend/requirements.txt`.
+
 ## Elevator pitch
 
 FixLens is a camera-first AI repair companion. Point your phone at something broken, stuck, or half-assembled and FixLens tells you what it sees, what's likely wrong, and whether it's safe to touch, then walks you through the repair step by step, marks exactly where to look with a hand-drawn target on your live camera view, and verifies each step with a follow-up photo before letting you move on. It's an AI technician in your pocket, drawn like a beautifully illustrated workshop field guide, and it's honest: it never claims success without visual evidence, and it refuses unsafe work outright.
