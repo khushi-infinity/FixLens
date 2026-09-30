@@ -6,6 +6,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.PurchasesTransactionException
@@ -63,12 +64,21 @@ class RevenueCatGateway(private val appContext: Context) : PurchasesGateway {
         current.availablePackages.mapNotNull { pkg ->
             val product = pkg.product
             productCache[product.id] = product
-            when (product.id) {
-                config.productMonthly -> product.toPaywallProduct(PaywallProduct.Kind.SUBSCRIPTION_MONTHLY, "per month")
-                config.productAnnual -> product.toPaywallProduct(PaywallProduct.Kind.SUBSCRIPTION_ANNUAL, "per year")
-                config.productPack5 -> product.toPaywallProduct(PaywallProduct.Kind.PACK_5, null)
-                config.productPack10 -> product.toPaywallProduct(PaywallProduct.Kind.PACK_10, null)
-                else -> null // only spec §12 products are ever rendered
+            // Match primarily by RevenueCat PACKAGE TYPE so any product naming
+            // works (monthly/yearly/lifetime as well as fixlens_*), then by
+            // configured product id for custom pack packages.
+            when {
+                pkg.packageType == PackageType.MONTHLY || product.id == config.productMonthly ->
+                    product.toPaywallProduct(PaywallProduct.Kind.SUBSCRIPTION_MONTHLY, "per month")
+                pkg.packageType == PackageType.ANNUAL || product.id == config.productAnnual ->
+                    product.toPaywallProduct(PaywallProduct.Kind.SUBSCRIPTION_ANNUAL, "per year")
+                pkg.packageType == PackageType.LIFETIME || product.id == config.productLifetime ->
+                    product.toPaywallProduct(PaywallProduct.Kind.LIFETIME, null)
+                product.id == config.productPack5 ->
+                    product.toPaywallProduct(PaywallProduct.Kind.PACK_5, null)
+                product.id == config.productPack10 ->
+                    product.toPaywallProduct(PaywallProduct.Kind.PACK_10, null)
+                else -> null // only catalog products are ever rendered
             }
         }
     } catch (e: PurchasesException) {

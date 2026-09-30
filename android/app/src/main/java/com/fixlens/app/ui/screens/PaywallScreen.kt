@@ -52,6 +52,12 @@ import com.fixlens.app.billing.BillingRepository
 import com.fixlens.app.billing.BillingResult
 import com.fixlens.app.billing.PaywallProduct
 import com.fixlens.app.ui.theme.FixLensColors
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import kotlinx.coroutines.launch
 
 /**
@@ -68,11 +74,21 @@ import kotlinx.coroutines.launch
 object PlannedPricing {
     const val MONTHLY_LABEL = "$7.99 / month"
     const val ANNUAL_LABEL = "$59.99 / year"
+    const val LIFETIME_LABEL = "One-time"
     const val PACK5_LABEL = "$3.99 one-time"
     const val PACK10_LABEL = "$6.99 one-time"
     const val ANNUAL_SAVINGS = "2 months free"
 }
 
+/**
+ * Paywall screen states above and beyond the sheet itself: the RevenueCat
+ * dashboard-designed paywall (native Paywalls) and the Customer Center.
+ * Both render full screen before the custom pricing sheet and require the
+ * SDK to be configured.
+ */
+@OptIn(
+    com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI::class,
+)
 @Composable
 fun PaywallScreen(
     repository: BillingRepository,
@@ -91,6 +107,43 @@ fun PaywallScreen(
     var restoring by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var messageIsError by remember { mutableStateOf(false) }
+    var showNativePaywall by remember { mutableStateOf(false) }
+    var showCustomerCenter by remember { mutableStateOf(false) }
+
+    // RevenueCat native Paywall (dashboard-designed templates). A completed
+    // purchase flips the real entitlement through the repository's customer
+    // info listener; the state.isPro effect below then closes this screen.
+    if (showNativePaywall) {
+        Paywall(
+            options = PaywallOptions.Builder(dismissRequest = { showNativePaywall = false })
+                .setListener(
+                    object : PaywallListener {
+                        override fun onPurchaseCompleted(
+                            customerInfo: CustomerInfo,
+                            storeTransaction: StoreTransaction,
+                        ) {
+                            showNativePaywall = false
+                        }
+
+                        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                            showNativePaywall = false
+                        }
+                    },
+                )
+                .build(),
+        )
+        return
+    }
+
+    // Customer Center: purchases, restore, cancel flows, support options,
+    // all handled by RevenueCat's dashboard-configured management screen.
+    if (showCustomerCenter) {
+        CustomerCenter(
+            modifier = Modifier.fillMaxSize(),
+            onDismiss = { showCustomerCenter = false },
+        )
+        return
+    }
 
     LaunchedEffect(Unit) {
         products = repository.paywallProducts()
@@ -114,11 +167,24 @@ fun PaywallScreen(
             when (result) {
                 is BillingResult.Success -> {
                     view.hapticConfirm()
-                    if (!result.info.entitlementActive && product.kind != PaywallProduct.Kind.SUBSCRIPTION_MONTHLY &&
-                        product.kind != PaywallProduct.Kind.SUBSCRIPTION_ANNUAL
-                    ) {
-                        message = "Repair pack added, ${creditsFor(product)} credits."
-                        messageIsError = false
+                    when {
+                        // Subscriptions/lifetime: the sheet closed, so the store
+                        // accepted the purchase; if the entitlement is not active
+                        // the product is missing from it in the dashboard. Say so
+                        // plainly instead of pretending nothing happened.
+                        !result.info.entitlementActive &&
+                            product.kind != PaywallProduct.Kind.PACK_5 &&
+                            product.kind != PaywallProduct.Kind.PACK_10 -> {
+                            message =
+                                "Purchase recorded, but the ${repository.entitlementId()} entitlement is not active yet. " +
+                                    "In the RevenueCat dashboard, attach this product to the entitlement, then restart the app."
+                            messageIsError = false
+                        }
+                        !result.info.entitlementActive -> {
+                            message = "Repair pack added, ${creditsFor(product)} credits."
+                            messageIsError = false
+                        }
+                        else -> message = null
                     }
                 }
                 is BillingResult.Error -> if (!result.userCancelled) {
@@ -199,6 +265,7 @@ fun PaywallScreen(
             else -> {
                 val monthly = products.firstOrNull { it.kind == PaywallProduct.Kind.SUBSCRIPTION_MONTHLY }
                 val annual = products.firstOrNull { it.kind == PaywallProduct.Kind.SUBSCRIPTION_ANNUAL }
+                val lifetime = products.firstOrNull { it.kind == PaywallProduct.Kind.LIFETIME }
                 val pack5 = products.firstOrNull { it.kind == PaywallProduct.Kind.PACK_5 }
                 val pack10 = products.firstOrNull { it.kind == PaywallProduct.Kind.PACK_10 }
 
@@ -225,6 +292,15 @@ fun PaywallScreen(
                         busy = purchasingId == monthly.productId,
                         onClick = { runPurchase(monthly) },
                     )
+                    lifetime?.let {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        PurchaseButton(
+                            title = "Lifetime · ${it.price}",
+                            subtitle = "Every Pro feature, once, forever",
+                            busy = purchasingId == it.productId,
+                            onClick = { runPurchase(it) },
+                        )
+                    }
                     if (pack5 != null || pack10 != null) {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(color = FixLensColors.Cream)
@@ -287,7 +363,11 @@ fun PaywallScreen(
         }
 
         if (state.configured) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(onClick = { showCustomerCenter = true }) {
+                Text("Manage purchase", color = FixLensColors.MutedInk)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             OutlinedButton(
                 onClick = {
                     scope.launch {
@@ -370,6 +450,12 @@ private fun UnconfiguredPricing(onDismiss: () -> Unit, detail: String? = null) {
                 title = "Pro Monthly",
                 price = PlannedPricing.MONTHLY_LABEL,
                 subtitle = "Cancel anytime",
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            PlannedPlan(
+                title = "Lifetime",
+                price = PlannedPricing.LIFETIME_LABEL,
+                subtitle = "Every Pro feature, once, forever",
             )
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = FixLensColors.Rule)

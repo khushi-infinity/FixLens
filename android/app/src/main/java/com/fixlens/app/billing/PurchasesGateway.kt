@@ -74,5 +74,5 @@ data class PaywallProduct(
     /** Subscription period label for subscriptions (e.g. "per month"), null for one-time. */
     val periodLabel: String? = null,
 ) {
-    enum class Kind { SUBSCRIPTION_MONTHLY, SUBSCRIPTION_ANNUAL, PACK_5, PACK_10 }
+    enum class Kind { SUBSCRIPTION_MONTHLY, SUBSCRIPTION_ANNUAL, LIFETIME, PACK_5, PACK_10 }
 }

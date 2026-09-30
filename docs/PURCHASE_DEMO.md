@@ -7,19 +7,22 @@ production. Say that one line on camera, it builds credibility.
 
 ## 0. One-time setup (before recording)
 
-1. Create the RevenueCat project (free): https://app.revenuecat.com → New
-   project → name it `FixLens` → platform **Android**.
-2. The **Test Store** is created automatically with the project. Open
-   **Product catalog → Test Store** and create four products:
-   - `fixlens_monthly`, $7.99, subscription, 1 month
-   - `fixlens_annual`, $59.99, subscription, 1 year
-   - `fixlens_repair_pack_5`, $3.99, one-time
-   - `fixlens_repair_pack_10`, $6.99, one-time
-3. Create the entitlement **`fixlens_pro`** and attach all four products to
-   it. Put monthly + annual in the current **Offering**.
-4. Copy the **Test Store API key** (Project Settings → API keys, starts with
-   `testn_`). Never use a Test Store key in a release build.
-5. Also grab the **project ID** (Project Settings) for the Devpost form.
+Your project exists and the key is already on the emulator. The remaining
+step that makes the purchase actually flip Pro:
+
+1. **Attach the products to the entitlement.** RevenueCat dashboard →
+   Product catalog → Entitlement **`fixlens_pro`** → Attach: `monthly`,
+   `yearly`, `lifetime` (and the packs if you keep them). Without this the
+   purchase completes but the app correctly stays in free mode, and the
+   paywall now says so explicitly.
+2. **Offering:** your current offering already serves monthly ($9.99),
+   yearly ($79.98), and lifetime ($99.99) — the paywall picks these up live
+   and computes the annual savings badge (33%).
+3. Optional rename to the spec catalog (`fixlens_monthly`, `fixlens_annual`,
+   `fixlens_lifetime`, `fixlens_repair_pack_5/10`): the app matches packages
+   by RevenueCat package type, so either naming works. If you rename, update
+   the Devpost HAMM prices to the dashboard prices.
+4. Also grab the **project ID** (Project Settings) for the Devpost form.
 
 ## 1. Configure the phone (iQOO Z6)
 
@@ -41,13 +44,13 @@ state once the key is present).
 ## 2. The purchase scene (shot list, about 35 seconds)
 
 1. **Home** → tap **FixLens Pro** (badge). The paywall opens with the full
-   pricing page: live prices, annual marked recommended with the savings
-   badge. Linger 2 seconds so judges read the prices.
-2. Tap **Pro Annual**. The RevenueCat **Test Store purchase sheet** slides up
-   showing the plan and a **Simulate success** button (this is the sandbox).
-3. Tap **Simulate success**. The sheet closes, a confirm haptic fires, and
-   the app closes the paywall automatically: the entitlement flipped for
-   real.
+   pricing page: live dashboard prices, annual marked recommended with the
+   computed savings badge. Linger 2 seconds so judges read the prices.
+2. Tap **Pro Monthly** (or Annual). The RevenueCat **Test Store purchase
+   sheet** slides up showing the product and price (sandbox mode).
+3. Tap **TEST VALID PURCHASE**. The sheet closes, a confirm haptic fires,
+   and the app closes the paywall automatically: the entitlement flipped
+   for real.
 4. Back on **Home**, the badge now reads **FIXLENS PRO**. Say the line:
    "That's RevenueCat's Test Store sandbox, no real money, but the
    entitlement is real state that ships unchanged to production."

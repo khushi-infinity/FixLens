@@ -26,19 +26,22 @@ data class BillingConfig(
     val entitlementId: String = DEFAULT_ENTITLEMENT,
     val productMonthly: String = "fixlens_monthly",
     val productAnnual: String = "fixlens_annual",
+    val productLifetime: String = "fixlens_lifetime",
     val productPack5: String = "fixlens_repair_pack_5",
     val productPack10: String = "fixlens_repair_pack_10",
 ) {
     /** Spec §12 product identifiers + fixlens_pro entitlement, as one bundle. */
     val productIds: List<String>
-        get() = listOf(productMonthly, productAnnual, productPack5, productPack10)
+        get() = listOf(productMonthly, productAnnual, productLifetime, productPack5, productPack10)
 
     val isTestStoreKey: Boolean
-        get() = apiKey.startsWith(TEST_KEY_PREFIX)
+        get() = apiKey.startsWith(TEST_KEY_PREFIX) || apiKey.startsWith(TEST_KEY_PREFIX_ALT)
 
     companion object {
         const val DEFAULT_ENTITLEMENT = "fixlens_pro"
-        const val TEST_KEY_PREFIX = "testn_"
+        /** RevenueCat Test Store key prefixes: current `test_`, legacy `testn_`. */
+        const val TEST_KEY_PREFIX = "test_"
+        const val TEST_KEY_PREFIX_ALT = "testn_"
         const val MISSING = ""
 
         /** Parses the developer config file lines into a [BillingConfig]. */
@@ -52,6 +55,8 @@ data class BillingConfig(
                     ?.takeIf { it.isNotEmpty() } ?: "fixlens_monthly",
                 productAnnual = values["revenuecat.product_annual"]?.trim()
                     ?.takeIf { it.isNotEmpty() } ?: "fixlens_annual",
+                productLifetime = values["revenuecat.product_lifetime"]?.trim()
+                    ?.takeIf { it.isNotEmpty() } ?: "fixlens_lifetime",
                 productPack5 = values["revenuecat.product_pack5"]?.trim()
                     ?.takeIf { it.isNotEmpty() } ?: "fixlens_repair_pack_5",
                 productPack10 = values["revenuecat.product_pack10"]?.trim()

@@ -237,6 +237,9 @@ class BillingRepository(
     /** Paywall offerings; empty list means "not configured / nothing to sell". */
     suspend fun paywallProducts(): List<PaywallProduct> = gateway.offerings(config)
 
+    /** The entitlement id this build checks (for diagnostics messages). */
+    fun entitlementId(): String = config.entitlementId
+
     /** Launches the real purchase sheet (Test Store modal in development). */
     suspend fun purchase(activity: android.app.Activity, product: PaywallProduct): BillingResult =
         gateway.purchase(activity, product, config).also { result ->

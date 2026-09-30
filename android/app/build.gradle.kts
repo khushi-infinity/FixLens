@@ -72,6 +72,8 @@ dependencies {
     // RevenueCat monetization (Phase 6). The API key is NEVER compiled in,
     // it is a developer-provided device config value (see BillingConfig).
     implementation(libs.revenuecat.purchases)
+    // RevenueCat UI SDK: native Paywalls presentation + Customer Center.
+    implementation(libs.revenuecat.purchases.ui)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockwebserver)
