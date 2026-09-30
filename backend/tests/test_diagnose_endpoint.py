@@ -76,7 +76,7 @@ class FakeMalformedProvider:
 
 
 # The selector resolves providers via _build_provider; tests patch it
-# directly to inject fakes — no real API call ever happens here.
+# directly to inject fakes, no real API call ever happens here.
 @pytest.fixture
 def patch_chain(monkeypatch):
     state = {"gemini": None, "openrouter": None}

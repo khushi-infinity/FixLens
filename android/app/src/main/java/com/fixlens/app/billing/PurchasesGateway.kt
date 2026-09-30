@@ -8,7 +8,7 @@ import android.app.Activity
  * the AI provider abstraction: call sites never name the SDK).
  *
  * Real implementation: [RevenueCatGateway]. All methods suspend and never
- * throw for expected outcomes — failures arrive as [BillingResult.Error].
+ * throw for expected outcomes, failures arrive as [BillingResult.Error].
  */
 interface PurchasesGateway {
     /** Starts RevenueCat; cheap, idempotent, safe to call from any thread. */
@@ -39,7 +39,7 @@ sealed class BillingResult {
 
 /**
  * Normalized customer/purchase state the rest of the app consumes.
- * [entitlementActive] comes from the REAL RevenueCat entitlement map —
+ * [entitlementActive] comes from the REAL RevenueCat entitlement map,
  * nothing in FixLens fakes or persists this value.
  */
 data class BillingSnapshot(

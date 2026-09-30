@@ -1,7 +1,7 @@
 """AI provider abstraction (spec §4).
 
 Providers implement [AIProvider]. The rest of the backend only knows the
-interface — provider selection lives in selector.py + configuration, never
+interface, provider selection lives in selector.py + configuration, never
 hardcoded at call sites.
 """
 import json
@@ -58,7 +58,7 @@ _VALID_CATEGORIES = {
 def extract_json_object(text: str) -> Dict[str, Any]:
     """Safe JSON recovery: plain parse, then code-fence strip, then
     first-balanced-brace extraction. Raises ProviderInvalidResponse when
-    nothing parseable remains — never fabricates data."""
+    nothing parseable remains, never fabricates data."""
     if not text or not text.strip():
         raise ProviderInvalidResponse("Provider returned an empty payload")
 
@@ -159,7 +159,7 @@ def parse_diagnosis_payload(
     provider_name: str,
 ) -> DiagnosisResult:
     """Maps a model JSON object into the strict schema. Validation errors
-    raise ProviderInvalidResponse — malformed model output never passes."""
+    raise ProviderInvalidResponse, malformed model output never passes."""
     try:
         causes = [
             LikelyCause(
@@ -241,7 +241,7 @@ class AIProvider(ABC):
 
 def parse_plan_payload(payload: Dict[str, Any], provider_name: str) -> RepairPlan:
     """Maps a model JSON object into a strict RepairPlan. Validation errors
-    raise ProviderInvalidResponse — malformed model output never passes."""
+    raise ProviderInvalidResponse, malformed model output never passes."""
     try:
         steps = [_step_from_payload(entry, index) for index, entry in enumerate(payload.get("steps") or [])]
         if not steps:
@@ -270,7 +270,7 @@ def _step_from_payload(entry: Any, index: int) -> RepairStep:
             # A model that names a tool has effectively identified one.
             tool_known = True
         return RepairStep(
-            # Step numbers are positional by construction — the model's own
+            # Step numbers are positional by construction, the model's own
             # numbering is informational only and is never validated or shown.
             number=index + 1,
             title=str(entry.get("title", "")).strip(),
@@ -303,7 +303,7 @@ def parse_assembly_payload(
         steps = [_step_from_payload(entry, index) for index, entry in enumerate(payload.get("steps") or [])]
         order_confident = bool(payload.get("order_confident", False))
         if order_confident and not steps:
-            # Model claimed confidence but produced no sequence — treat as
+            # Model claimed confidence but produced no sequence, treat as
             # insufficient evidence rather than trusting the flag.
             order_confident = False
         requested_view = payload.get("requested_view")
@@ -334,7 +334,7 @@ def parse_assembly_payload(
 def parse_verify_payload(payload: Dict[str, Any], provider_name: str) -> VerificationResult:
     """Maps a model JSON object into a validated VerificationResult. The
     deterministic view rules (only UNCERTAIN may request a better view, and
-    it must always carry one) are enforced by the schema itself — a model
+    it must always carry one) are enforced by the schema itself, a model
     that returns UNCERTAIN without an instruction still yields a valid,
     honest result with the generic fallback view request."""
     try:

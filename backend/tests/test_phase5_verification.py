@@ -1,6 +1,6 @@
 """Phase 5 tests: camera-based verification (schemas, parser, endpoint).
 
-No real API calls — providers are injected fakes via the patch_chain
+No real API calls, providers are injected fakes via the patch_chain
 fixture (same pattern as test_phase4_planning.py).
 
 Key invariants under test:
@@ -13,7 +13,7 @@ Key invariants under test:
   - Verification is separate from diagnosis: no safety gate and no plan
     generation touches this endpoint.
   - Transport failures map to 503, invalid payloads to 502, bad requests
-    to 400 — all with friendly messages.
+    to 400, all with friendly messages.
 """
 import io
 

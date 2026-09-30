@@ -1,4 +1,4 @@
-"""FixLens FastAPI backend — Phase 6 (diagnosis + planning + verification).
+"""FixLens FastAPI backend, Phase 6 (diagnosis + planning + verification).
 
 Endpoints:
   GET  /health             liveness probe
@@ -86,7 +86,7 @@ async def diagnose(
     mode: str = Form("PHOTO"),
     context: Optional[str] = Form(None),
 ) -> DiagnoseResponse:
-    """Diagnoses one photo. Explicit user-triggered analysis only — the
+    """Diagnoses one photo. Explicit user-triggered analysis only, the
     backend never receives camera frames it did not ask for (spec §15)."""
     request_start = time.monotonic()
     logger.info("request=diagnose received content_type=%s", image.content_type)
@@ -165,7 +165,7 @@ def plan(request: PlanRequest) -> PlanResponse:
     """Turns a validated Phase 3 diagnosis into a structured repair plan.
 
     Safety happens BEFORE planning (spec §17.6): HIGH risk never reaches the
-    model — no instructions are ever generated, only the professional
+    model, no instructions are ever generated, only the professional
     referral. Better-view and no-issue diagnoses are also blocked deterministically.
     """
     request_start = time.monotonic()
@@ -320,7 +320,7 @@ async def assembly_endpoint(
         logger.info("request=assembly status=blocked reason=safety_stop")
         return AssemblyResponse(
             status=AssemblyStatus.BLOCKED_HIGH_RISK,
-            assembly_plan=None,  # discarded — no path can render its steps
+            assembly_plan=None,  # discarded, no path can render its steps
             safety=safety,
             provider_used=provider_name,
             duration_ms=int((time.monotonic() - request_start) * 1000),
@@ -359,7 +359,7 @@ async def verify_endpoint(
 ) -> VerifyResponse:
     """Verifies one repair step against a fresh capture.
 
-    Separation of concerns (spec §17.7): verification is NOT a re-diagnosis —
+    Separation of concerns (spec §17.7): verification is NOT a re-diagnosis,
     the model only judges the supplied expected state against the current
     image. The call is explicitly user-triggered (one frame per request, the
     client never streams). UNCERTAIN is the honest outcome whenever the

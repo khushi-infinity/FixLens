@@ -51,7 +51,7 @@ import com.fixlens.app.ui.theme.FixLensColors
 
 /**
  * Phase 4 "Show Me" overlay (spec §17.6): live camera + sketched framing guide +
- * short instruction. Honest approximate targeting — the ring marks WHERE to
+ * short instruction. Honest approximate targeting, the ring marks WHERE to
  * look in frame, not a pixel-accurate component localization (no per-frame AI,
  * no ARCore). Explicit user action opens this screen; nothing is analyzed.
  */
@@ -195,7 +195,7 @@ fun ShowMeCameraScreen(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Framing guide only — move your camera until the part is inside the drawn circle.",
+                    text = "Framing guide only, move your camera until the part is inside the drawn circle.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = FixLensColors.MutedInk,
                 )

@@ -1,11 +1,11 @@
 """Provider selection + bounded fallback (spec §4).
 
 Primary provider from AI_PROVIDER, optional fallback from
-AI_FALLBACK_PROVIDER. Selection is configuration-driven — no call site names
+AI_FALLBACK_PROVIDER. Selection is configuration-driven, no call site names
 a provider. Fallback triggers only on ProviderUnavailable (timeout, 5xx,
 quota, network); invalid model payloads are NOT retried on the fallback
 because a second model seeing the same image usually produces the same
-schema problem — surfaced as a controlled error instead.
+schema problem, surfaced as a controlled error instead.
 """
 import json
 import logging
@@ -137,7 +137,7 @@ def plan_with_fallback(
     if settings.ai_fallback_provider and settings.ai_fallback_provider != settings.ai_provider:
         chain.append(settings.ai_fallback_provider)
 
-    # The diagnosis is passed to the model as compact JSON — it is the
+    # The diagnosis is passed to the model as compact JSON, it is the
     # validated, safety-gated schema object, never the raw photo.
     diagnosis_json = json.dumps(
         diagnosis.model_dump(mode="json", exclude_none=True),

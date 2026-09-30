@@ -1,26 +1,26 @@
-# FixLens — Architecture Plan (Phase 1 snapshot)
+# FixLens, Architecture Plan (Phase 1 snapshot)
 
 > **Historical document.** This was the Phase 1 architecture plan; it is kept
 > for the record only. The current source of truth is
 > `FIXLENS_MASTER_BUILD_SPEC.md` plus the per-phase records in
-> `FIXLENS_PROGRESS.md` — layer sequencing there superseded some numbering
+> `FIXLENS_PROGRESS.md`, layer sequencing there superseded some numbering
 > here (e.g. verification shipped in Phase 5, RevenueCat in Phase 6, Demo
 > Mode in Phase 7). Do not treat phase numbers in this file as current.
 
 ---
 
-## 1. Repository inspection — current state
+## 1. Repository inspection, current state
 
 | Area | State |
 |---|---|
 | Android app | **Not present.** No `android/` directory, no Gradle project. |
 | FastAPI backend | **Not present.** No `backend/` directory. |
-| Spec (`FIXLENS_MASTER_BUILD_SPEC.md`) | Present, complete — product, loop, scenarios, safety, schemas, monetization, phases. |
+| Spec (`FIXLENS_MASTER_BUILD_SPEC.md`) | Present, complete, product, loop, scenarios, safety, schemas, monetization, phases. |
 | `FIXLENS_PROGRESS.md` | Present, matches spec §15 template; Phase 1 is the active task. |
 | Secrets | Root `.env` exists with `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `REVENUECAT_PUBLIC_API_KEY` **all configured** (names only checked; values never read). No `.gitignore` existed before this phase. |
 | Version control | **Not a git repository yet.** |
 | Toolchain | Python 3.9.6, Java 22, adb 1.0.41 available. Android Studio presence not verifiable from CLI; required per spec §14. |
-| Tests | None — nothing to test yet. |
+| Tests | None, nothing to test yet. |
 
 **Risk identified and closed this phase:** the root `.env` with live keys sat in a repo with no ignore rules. `.gitignore` now excludes `.env` files (keeping `!.env.example` tracked) *before* any `git init`/first commit can ever include secrets.
 
@@ -28,13 +28,13 @@
 
 ---
 
-## 2. Target repository layout (created across Phases 2–6)
+## 2. Target repository layout (created across Phases 2-6)
 
 ```text
 fixlens/
-├── FIXLENS_MASTER_BUILD_SPEC.md      # exists — source of truth
+├── FIXLENS_MASTER_BUILD_SPEC.md      # exists, source of truth
 ├── FIXLENS_ARCHITECTURE.md           # this file
-├── FIXLENS_PROGRESS.md               # exists — continuity file
+├── FIXLENS_PROGRESS.md               # exists, continuity file
 ├── .gitignore                        # added in Phase 1
 ├── android/                          # Phase 2
 │   ├── settings.gradle.kts
@@ -74,7 +74,7 @@ Naming, package choices, and file boundaries may shift slightly during implement
 
 ---
 
-## 3. Core loop — traceable mapping (spec §1, §11 → code)
+## 3. Core loop, traceable mapping (spec §1, §11 → code)
 
 The spec's loop is the product. Every future layer exists to serve one stage of it:
 
@@ -112,11 +112,11 @@ FastAPI :8000
    └─ Repair state machine: SCAN → ANALYZE → SAFETY_CHECK → DIAGNOSIS
         → GUIDE / LIMITED_GUIDE / ASK_FOR_VIEW / SAFETY_STOP → USER_ACTION → VERIFY → NEXT_STEP | COMPLETE
    ▼
-Android renders: diagnosis card · step guidance · targeting overlay (0–1000 normalized box) ·
+Android renders: diagnosis card · step guidance · targeting overlay (0-1000 normalized box) ·
 verification result · safety-stop screen
 ```
 
-**Demo Mode discipline (spec §4, §13):** it uses the real camera UI, is deterministic per scenario, and is clearly labeled as pre-authored — never presented as live AI.
+**Demo Mode discipline (spec §4, §13):** it uses the real camera UI, is deterministic per scenario, and is clearly labeled as pre-authored, never presented as live AI.
 
 ---
 
@@ -124,11 +124,11 @@ verification result · safety-stop screen
 
 One endpoint family, all responses Pydantic-validated:
 
-- `GET /health` — liveness for the runbook's first device check
-- `POST /v1/diagnose` — image(s) + mode → object, issue, likely causes, confidence, safety level, `needs_better_view` (+ `requested_view`)
-- `POST /v1/plan` — verified diagnosis → minimal safe repair steps
-- `POST /v1/target` — current image + step → normalized bounding box `[ymin, xmin, ymax, xmax]` on 0–1000
-- `POST /v1/verify` — current image + expected step state → `PASS | FAIL | UNCERTAIN` + evidence
+- `GET /health`, liveness for the runbook's first device check
+- `POST /v1/diagnose`, image(s) + mode → object, issue, likely causes, confidence, safety level, `needs_better_view` (+ `requested_view`)
+- `POST /v1/plan`, verified diagnosis → minimal safe repair steps
+- `POST /v1/target`, current image + step → normalized bounding box `[ymin, xmin, ymax, xmax]` on 0-1000
+- `POST /v1/verify`, current image + expected step state → `PASS | FAIL | UNCERTAIN` + evidence
 
 Enums match spec §10 exactly: `Mode`, `SafetyLevel`, `ActionType`, `VerificationState`.
 
@@ -140,7 +140,7 @@ Enums match spec §10 exactly: `Mode`, `SafetyLevel`, `ActionType`, `Verificatio
 |---|---|---|
 | AI provider keys | `backend/.env` only (gitignored) | Never in Kotlin, never committed |
 | `.env.example` files | tracked placeholders | Present from Phase 3 |
-| Backend URL | Android `BackendConfig` — settings/config value | `adb reverse` default `127.0.0.1:8000`; LAN fallback user-configurable; never hardcoded (§14) |
+| Backend URL | Android `BackendConfig`, settings/config value | `adb reverse` default `127.0.0.1:8000`; LAN fallback user-configurable; never hardcoded (§14) |
 | Provider + model IDs, timeouts, demo mode flag | backend config, env-driven | Never hardcoded anywhere |
 | RevenueCat public SDK key | Android local/config value | Dashboard-configured; Test Store in dev (§12) |
 
@@ -148,7 +148,7 @@ Enums match spec §10 exactly: `Mode`, `SafetyLevel`, `ActionType`, `Verificatio
 
 ---
 
-## 7. Phase sequencing (spec §17 — restated with entry/exit criteria, no scope added)
+## 7. Phase sequencing (spec §17, restated with entry/exit criteria, no scope added)
 
 | # | Phase | Entry criteria | Exit criteria |
 |---|---|---|---|

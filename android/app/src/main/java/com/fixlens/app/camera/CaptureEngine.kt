@@ -14,7 +14,7 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
- * Still-capture helper for CameraX. Produces JPEG files in cacheDir/captures —
+ * Still-capture helper for CameraX. Produces JPEG files in cacheDir/captures,
  * a staging area only. Images become permanent captures only after the user
  * confirms, via [com.fixlens.app.data.CaptureStore.saveConfirmedCapture].
  */

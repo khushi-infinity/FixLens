@@ -27,7 +27,7 @@ class PreviewSession(
 
     private var cameraProvider: ProcessCameraProvider? = null
     private var activeCamera: androidx.camera.core.Camera? = null
-    /** Use cases THIS session bound — stop() unbinds only these, never the
+    /** Use cases THIS session bound, stop() unbinds only these, never the
      * whole provider (unbindAll() would kill another screen's live binding
      * during screen transitions that overlap by a frame). */
     private var boundUseCases: List<androidx.camera.core.UseCase> = emptyList()
@@ -94,7 +94,7 @@ class PreviewSession(
     fun stop() {
         activeCamera = null
         // Targeted unbind: another camera screen may have just bound its own
-        // use cases on the shared provider — a global unbindAll() here would
+        // use cases on the shared provider, a global unbindAll() here would
         // race with and kill its binding (observed on the emulator as
         // "Not bound to a valid Camera [ImageCapture:...]" right after Show Me
         // closed and the verification capture screen opened).

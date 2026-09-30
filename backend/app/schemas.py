@@ -83,7 +83,7 @@ class ComponentItem(BaseModel):
 
 
 class DiagnosisResult(BaseModel):
-    """The normalized, validated diagnosis — the only diagnosis shape the
+    """The normalized, validated diagnosis, the only diagnosis shape the
     Android app ever receives."""
 
     object_name: str = Field(..., min_length=1, max_length=200)
@@ -91,7 +91,7 @@ class DiagnosisResult(BaseModel):
     components: List[ComponentItem] = Field(default_factory=list, max_length=12)
     issue_summary: str = Field(..., min_length=1, max_length=1000)
     # Non-empty enforced conditionally by _causes_required_only_for_real_issues
-    # (a "no visible issue" result legitimately has no causes — never fabricate).
+    # (a "no visible issue" result legitimately has no causes, never fabricate).
     likely_causes: List[LikelyCause] = Field(..., max_length=6)
     confidence: float = Field(..., ge=0.0, le=1.0)
     confidence_band: ConfidenceBand
@@ -117,7 +117,7 @@ class DiagnosisResult(BaseModel):
     @field_validator("likely_causes")
     @classmethod
     def _causes_required_only_for_real_issues(cls, v: List[LikelyCause], info):
-        """An image with no visible issue legitimately has no causes — the
+        """An image with no visible issue legitimately has no causes, the
         model must not fabricate any (spec: never fabricate). A diagnosed
         issue, however, must be supported by at least one cause."""
         no_issue = is_no_visible_issue_text(info.data.get("issue_summary", ""))
@@ -167,7 +167,7 @@ class DiagnoseResponse(BaseModel):
 # ---------------------------------------------------------------------------#
 
 class RepairStep(BaseModel):
-    """One guided step. The guidance screen renders exactly these fields —
+    """One guided step. The guidance screen renders exactly these fields,
     there is no free-form prose block. `tool_known=False` means the required
     tool could NOT be determined from the evidence; the UI must then show the
     generic fallback, never a guessed tool name."""
@@ -257,7 +257,7 @@ class AssemblyPlan(BaseModel):
 
 
 class PlanStatus(str, Enum):
-    """Outcome of a repair-plan request. Blocked states carry NO plan object —
+    """Outcome of a repair-plan request. Blocked states carry NO plan object,
     there is no code path that can render steps for them."""
     PLAN_READY = "PLAN_READY"
     BLOCKED_HIGH_RISK = "BLOCKED_HIGH_RISK"
@@ -268,7 +268,7 @@ class PlanStatus(str, Enum):
 class PlanRequest(BaseModel):
     """Body of POST /api/v1/plan: the diagnosis the Android app already
     received from /api/v1/diagnose (re-validated here), plus optional user
-    context. The image is NOT re-uploaded — planning consumes the validated
+    context. The image is NOT re-uploaded, planning consumes the validated
     diagnosis, not the photo."""
     diagnosis: DiagnosisResult
     context: Optional[str] = Field(None, max_length=500)
@@ -334,7 +334,7 @@ class VerificationRequest(BaseModel):
     state, action, and target so the model compares against the full step
     context) plus a fresh capture of the object now.
 
-    Verification is explicitly user-triggered — the Android client uploads
+    Verification is explicitly user-triggered, the Android client uploads
     one frame per explicit request and never streams (spec §15: no
     continuous LLM calls on camera frames)."""
     step_number: int = Field(..., ge=1, le=50)
@@ -343,7 +343,7 @@ class VerificationRequest(BaseModel):
     target_component: Optional[str] = Field(None, max_length=200)
     user_confirms_done: bool = True
     # Marker only: the capture travels as multipart bytes and is quality-gated
-    # by validate_upload() before any model call — never re-embedded here.
+    # by validate_upload() before any model call, never re-embedded here.
     current_image: str = Field(..., min_length=1)
     mode: Mode = Mode.VERIFY
 

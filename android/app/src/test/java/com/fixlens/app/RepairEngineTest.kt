@@ -116,7 +116,7 @@ class RepairEngineTest {
         engine.dispatch(RepairIntent.ConfirmStep)
         engine.dispatch(RepairIntent.Advance)
         assertEquals(EnginePhase.REPAIR_COMPLETE, engine.state.value.phase)
-        assertEquals("Guided steps finished — 1 step skipped.", engine.completionMessage())
+        assertEquals("Guided steps finished, 1 step skipped.", engine.completionMessage())
     }
 
     @Test

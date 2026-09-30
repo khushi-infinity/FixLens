@@ -52,8 +52,8 @@ import com.fixlens.app.ui.theme.FixLensColors
 
 /**
  * Phase 7 demo entry (spec §13): pick one of the deterministic scenarios.
- * Uses the real camera preview as the background — Demo Mode keeps the phone
- * camera at the center of the demo — and states its honest boundary up front.
+ * Uses the real camera preview as the background, Demo Mode keeps the phone
+ * camera at the center of the demo, and states its honest boundary up front.
  *
  * The camera here is presentational only: nothing captured is analyzed in
  * Demo Mode (results are pre-authored by design, and the banner says so).
@@ -191,7 +191,7 @@ fun DemoPickerScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 Text(
-                    text = "Demo Mode replays pre-authored results on the real camera view — it is not live AI. Nothing you capture here is analyzed or stored.",
+                    text = "Demo Mode replays pre-authored results on the real camera view, it is not live AI. Nothing you capture here is analyzed or stored.",
                     style = MaterialTheme.typography.bodySmall,
                     color = FixLensColors.MutedInk,
                     textAlign = TextAlign.Center,
@@ -217,7 +217,7 @@ fun DemoBanner(modifier: Modifier = Modifier, detail: String? = null) {
         color = FixLensColors.Sage,
     ) {
         Text(
-            text = if (detail == null) "DEMO MODE — scripted result, not live AI" else detail,
+            text = if (detail == null) "DEMO MODE, scripted result, not live AI" else detail,
             style = MaterialTheme.typography.labelMedium,
             color = FixLensColors.Terracotta,
             textAlign = TextAlign.Center,

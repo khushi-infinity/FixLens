@@ -1,6 +1,6 @@
 """FixLens backend configuration.
 
-Everything is environment-driven (backend/.env or process env) — no provider
+Everything is environment-driven (backend/.env or process env), no provider
 URLs, IPs, model IDs, or secrets are hardcoded at call sites. Phase 2 adds
 AI provider selection; none of these values are required for GET /health.
 """
@@ -61,7 +61,7 @@ class Settings:
             ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.5-flash"],
         )
         # One specific free vision-capable model (spec §4: no random router).
-        # Candidates are tried in order — free-tier pools are per-model, so a
+        # Candidates are tried in order, free-tier pools are per-model, so a
         # saturated candidate (429) falls through to the next.
         self.openrouter_model: str = (
             os.environ.get("OPENROUTER_MODEL") or "qwen/qwen3.8-27b:free"

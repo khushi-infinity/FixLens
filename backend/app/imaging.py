@@ -1,6 +1,6 @@
 """Image intake: validation, size limits, and model-ready preprocessing.
 
-Uploaded images are never stored permanently — bytes live only in memory for
+Uploaded images are never stored permanently, bytes live only in memory for
 the duration of the request (spec §14: do not store uploads by default).
 """
 import io
@@ -51,7 +51,7 @@ def validate_upload(data: bytes) -> None:
 
 def _check_quality(img: Image.Image) -> None:
     """Raises ImageValidationError for frames a vision model cannot use.
-    Deliberately conservative: only rejects clearly unusable images —
+    Deliberately conservative: only rejects clearly unusable images,
     borderline shots are left to the model + needs_better_view."""
     short_side = min(img.size)
     if short_side < MIN_EFFECTIVE_DIMENSION:
@@ -82,7 +82,7 @@ def prepare_for_model(data: bytes) -> Tuple[bytes, int, int]:
     Free-tier cost control (spec §15): a 12 MP camera photo becomes a
     ~1280 px JPEG, typically 10x smaller in upload bytes and tokens.
     Unusable frames (near-black, blown out, lens-blocked, too small) are
-    rejected here — before any provider call or quota spend.
+    rejected here, before any provider call or quota spend.
     """
     try:
         with Image.open(io.BytesIO(data)) as img:

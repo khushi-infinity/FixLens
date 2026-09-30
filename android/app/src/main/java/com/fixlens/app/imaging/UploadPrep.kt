@@ -12,7 +12,7 @@ import kotlin.math.max
  * Phase 8 performance: uploads are downscaled client-side to the same
  * resolution the backend sends to the vision model (backend
  * MODEL_MAX_DIMENSION = 1280 px longest edge). Uploading multi-megabyte
- * camera originals adds seconds of transfer with zero effect on AI results —
+ * camera originals adds seconds of transfer with zero effect on AI results,
  * the backend would resize them to this exact size anyway.
  *
  * The prepared file is written to cacheDir and can be deleted by the caller
@@ -27,7 +27,7 @@ object UploadPrep {
     /**
      * Returns a downscaled JPEG copy of [source] (longest edge ≤
      * [MAX_DIMENSION]). If the source is already small enough or cannot be
-     * decoded, the original file is returned unchanged — upload never fails
+     * decoded, the original file is returned unchanged, upload never fails
      * because of preparation.
      */
     fun prepare(context: Context, source: File): File {

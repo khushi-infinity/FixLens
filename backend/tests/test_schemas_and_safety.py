@@ -1,6 +1,6 @@
 """Offline tests: strict schema validation + deterministic safety policy.
 
-No network, no provider — the model payload is simulated. These prove that
+No network, no provider, the model payload is simulated. These prove that
 malformed model output can never silently pass and that HIGH risk always
 stops.
 """
@@ -45,8 +45,8 @@ class TestSchemaValidation:
 
     def test_out_of_range_confidence_clamped(self):
         """Numeric normalization policy: confidences are bounded to [0,1]
-        (a percent-style 85.0 would also clamp). Structural violations —
-        missing fields, bad enums, empty lists — are rejected outright."""
+        (a percent-style 85.0 would also clamp). Structural violations,
+        missing fields, bad enums, empty lists, are rejected outright."""
         result = parse_diagnosis_payload(_valid_payload(confidence=1.7), Mode.PHOTO, "test")
         assert result.confidence == 1.0
         result = parse_diagnosis_payload(_valid_payload(confidence=-0.4), Mode.PHOTO, "test")
@@ -137,7 +137,7 @@ class TestSafetyPolicy:
         assert "electrician" in notice.user_message.lower()
 
     def test_policy_escalates_hidden_high_risk(self):
-        """Model says LOW but the corpus contains an exposure pattern —
+        """Model says LOW but the corpus contains an exposure pattern,
         the deterministic layer must escalate."""
         payload = _valid_payload(
             issue_summary="Loose faceplate with exposed wiring behind it.",

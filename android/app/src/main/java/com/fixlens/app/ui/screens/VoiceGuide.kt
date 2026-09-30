@@ -5,13 +5,13 @@ import android.speech.tts.TextToSpeech
 import java.util.Locale
 
 /**
- * On-device text-to-speech for guided steps. Uses the platform TTS engine —
+ * On-device text-to-speech for guided steps. Uses the platform TTS engine,
  * no network call, no API key, nothing recorded. English voice; queue mode
  * FLUSH so step changes replace the previous utterance instead of stacking.
  *
  * Lifecycle: one instance per activity screen; [shutdown] on dispose.
  * Mute state is remembered across steps but never persisted (a phone restart
- * gives a fresh voice-on default — deliberate: silence should be a choice).
+ * gives a fresh voice-on default, deliberate: silence should be a choice).
  */
 class VoiceGuide(context: Context) : TextToSpeech.OnInitListener {
 

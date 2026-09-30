@@ -41,11 +41,11 @@ import kotlin.math.sin
 /**
  * Watercolor-style step illustration: a sketched object on the workbench with
  * a hand-drawn motion arrow animated over it, chosen from the step's action
- * verb. Pure Canvas — no images, no network, deterministic geometry with a
+ * verb. Pure Canvas, no images, no network, deterministic geometry with a
  * moving terracotta head over a faint ink "ghost" of the full path.
  *
  * This is an instructional aid (how the motion should feel), never a claim
- * about what the camera sees — that remains Show Me's honest boundary.
+ * about what the camera sees, that remains Show Me's honest boundary.
  */
 enum class StepMotion(val label: String) {
     MOVE("MOVE"),

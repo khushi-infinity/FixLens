@@ -3,7 +3,7 @@ package com.fixlens.app.billing
 /**
  * RevenueCat configuration (spec §5, §12).
  *
- * The RevenueCat API key is a PUBLIC app-specific key — but like every other
+ * The RevenueCat API key is a PUBLIC app-specific key, but like every other
  * configurable value in FixLens it is NEVER compiled into source. It is
  * developer-provided per device via the existing local config file
  * (`fixlens.properties`, written with run-as; see docs/DEVICE_SETUP.md):
@@ -19,7 +19,7 @@ package com.fixlens.app.billing
  * Test Store API keys work out of the box in debug builds (the SDK presents
  * its simulate-purchase modal instead of a real store sheet; the Test Store
  * crashes release builds on purpose, so the key must be swapped before any
- * production build — enforced by RevenueCat itself, not by us).
+ * production build, enforced by RevenueCat itself, not by us).
  */
 data class BillingConfig(
     val apiKey: String,

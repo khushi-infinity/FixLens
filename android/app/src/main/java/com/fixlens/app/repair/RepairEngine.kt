@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
  * Pure Kotlin: no Android imports, no network, no AI provider references.
  * The engine consumes an already-validated [RepairSessionPlan] and advances
  * through explicit user intents only. Every transition is legal-state
- * guarded — an invalid intent from an unreachable state is a no-op, never a
+ * guarded, an invalid intent from an unreachable state is a no-op, never a
  * crash. Phase 5 hooks: [RepairStepState] and [VerificationResult] expose the
  * exact seam where visual verification plugs in later; the engine never
  * calls a model itself.
@@ -21,7 +21,7 @@ enum class RepairStepState {
     /** The user is being shown this step's instruction. */
     ACTIVE,
 
-    /** The user tapped "I've Done This" — step awaits confirmation/verification. */
+    /** The user tapped "I've Done This", step awaits confirmation/verification. */
     AWAITING_CONFIRMATION,
 
     /** The step is finished (user-confirmed; camera verification attaches at
@@ -36,7 +36,7 @@ enum class RepairStepState {
  * Outcome of visual verification at the READY_FOR_VERIFICATION seam
  * (Phase 5). The engine never produces these itself and never calls a model:
  * the UI performs the capture + backend call, then dispatches [RepairIntent.Advance]
- * only for [Verified]. FAIL and UNCERTAIN keep the step open — the engine has
+ * only for [Verified]. FAIL and UNCERTAIN keep the step open, the engine has
  * no code path that completes a step without an explicit user-driven Advance
  * following a PASS.
  */
@@ -125,7 +125,7 @@ data class RepairSessionRecord(
     val status: RepairSessionStatus,
 )
 
-/** User intents — the only way the state machine moves. */
+/** User intents, the only way the state machine moves. */
 sealed class RepairIntent {
     object Start : RepairIntent()
     object AcknowledgeSafety : RepairIntent()
@@ -200,7 +200,7 @@ class RepairEngine {
                 s.phase == EnginePhase.NEXT_STEP ||
                 // Withdrawing a confirmation while verification is pending
                 // (user backs out of the verification capture) returns the
-                // step to the working state — it never completes the step.
+                // step to the working state, it never completes the step.
                 s.phase == EnginePhase.READY_FOR_VERIFICATION
             ) {
                 s.copy(phase = EnginePhase.WAITING_FOR_USER)
@@ -298,14 +298,14 @@ class RepairEngine {
         }
     }
 
-    /** Completion wording is controlled here — never "Repair confirmed" (spec).
+    /** Completion wording is controlled here, never "Repair confirmed" (spec).
      * Skipped steps are stated honestly instead of being counted as done. */
     fun completionMessage(): String {
         val skipped = _state.value.stepStates.values.count { it == RepairStepState.BLOCKED_BY_USER }
         return if (skipped == 0) {
             "All guided steps completed."
         } else {
-            "Guided steps finished — $skipped step${if (skipped == 1) "" else "s"} skipped."
+            "Guided steps finished, $skipped step${if (skipped == 1) "" else "s"} skipped."
         }
     }
 

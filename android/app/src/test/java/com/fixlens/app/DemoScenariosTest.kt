@@ -20,7 +20,7 @@ import org.junit.Test
  * PRODUCTION DTO/session shapes and satisfy the same structural rules the
  * live pipeline enforces (no steps for SAFETY_STOP, positional numbering,
  * tool-known⇄tool consistency), and it must be byte-for-byte deterministic
- * across runs — that is the entire point of Demo Mode.
+ * across runs, that is the entire point of Demo Mode.
  */
 class DemoScenariosTest {
 

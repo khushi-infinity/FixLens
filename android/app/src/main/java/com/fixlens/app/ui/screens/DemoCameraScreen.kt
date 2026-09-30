@@ -30,7 +30,7 @@ import com.fixlens.app.ui.theme.FixLensColors
 
 /**
  * Phase 7: the real camera view inside Demo Mode. Same CameraX pipeline as
- * the product — the phone camera stays the interface — but the shutter is
+ * the product, the phone camera stays the interface, but the shutter is
  * always ready and nothing captured is ever uploaded: the demo result is
  * deterministic by design. The banner states this on every screen.
  */

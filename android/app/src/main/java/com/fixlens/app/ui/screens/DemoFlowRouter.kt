@@ -20,7 +20,7 @@ data class DemoContext(
 /**
  * Router for a scripted demo journey. Deterministic by construction: each
  * branch maps pre-authored content into the SAME production screens the live
- * pipeline uses — camera capture, diagnosis result, guidance + Show Me,
+ * pipeline uses, camera capture, diagnosis result, guidance + Show Me,
  * verification, completion, safety stop. No network, no AI, no billing here.
  *
  * Journey staging (spec §13: Demo Mode keeps the real camera):

@@ -68,7 +68,7 @@ private fun safetyLabel(level: String): String = when (level.uppercase()) {
     else -> level.lowercase().replaceFirstChar { it.uppercase() }
 }
 
-/** Controlled confidence wording — never a fake-precise percentage (spec §4). */
+/** Controlled confidence wording, never a fake-precise percentage (spec §4). */
 private fun confidenceWording(band: String?): String = when (band?.uppercase()) {
     "HIGH" -> "High confidence"
     "MEDIUM" -> "Medium confidence"
@@ -115,7 +115,7 @@ fun DiagnosisResultScreen(
                 translationY = (1f - enterProgress) * 26.dp.toPx()
             },
     ) {
-        // Phase 7: Demo Mode banner — the scripted result is never live AI.
+        // Phase 7: Demo Mode banner, the scripted result is never live AI.
         if (demo != null) {
             DemoBanner()
         }
@@ -208,7 +208,7 @@ fun DiagnosisResultScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "FixLens is not certain — treat this as an assessment, not a measurement.",
+                        text = "FixLens is not certain, treat this as an assessment, not a measurement.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -289,7 +289,7 @@ fun DiagnosisResultScreen(
             }
 
             Text(
-                text = "Diagnosis complete — start a guided fix to continue step by step.",
+                text = "Diagnosis complete, start a guided fix to continue step by step.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -337,7 +337,7 @@ fun DiagnosisResultScreen(
                 }
                 else -> {
                     // GUIDE / LIMITED_GUIDE: offer the guided repair (Phase 4).
-                    // SAFETY_STOP never reaches this branch — no instruction path exists.
+                    // SAFETY_STOP never reaches this branch, no instruction path exists.
                     Button(
                         onClick = onStartFix,
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) { Text("Start Fix") }
@@ -375,7 +375,7 @@ private fun SafetyStopCard(result: DiagnoseResponseDto) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "What FixLens detected: ${diag.objectName} — ${diag.issueSummary}",
+                text = "What FixLens detected: ${diag.objectName}, ${diag.issueSummary}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -390,7 +390,7 @@ private fun ComponentRow(component: ComponentDto) {
     } else {
         "• " // observed
     }
-    val status = component.status?.let { " — $it" } ?: ""
+    val status = component.status?.let { ", $it" } ?: ""
     Text(
         text = "$prefix${component.name}$status",
         style = MaterialTheme.typography.bodyMedium,

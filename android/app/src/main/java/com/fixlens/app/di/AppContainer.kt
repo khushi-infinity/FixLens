@@ -12,7 +12,7 @@ import com.fixlens.app.network.ApiClient
 /**
  * Phase 1 manual dependency container.
  *
- * Deliberately minimal: the Phase 1 architecture needs exactly three collaborators —
+ * Deliberately minimal: the Phase 1 architecture needs exactly three collaborators,
  * device backend configuration, the HTTP client abstraction, and the local capture
  * store. DI frameworks are intentionally not introduced.
  *

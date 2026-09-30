@@ -1,4 +1,4 @@
-"""Gemini vision provider — primary (spec §4).
+"""Gemini vision provider, primary (spec §4).
 
 Uses the REST generateContent endpoint directly (no SDK dependency), sends the
 image inline as base64 JPEG, requests JSON-structured output, and normalizes
@@ -201,7 +201,7 @@ class GeminiProvider:
                 except Exception:
                     pass
                 # 4xx with a real Gemini error body is an invalid-usage problem,
-                # not a transport failure — surface it and try the next model.
+                # not a transport failure, surface it and try the next model.
                 last_error = ProviderUnavailable(
                     f"Gemini HTTP {exc.code}: {detail or exc.reason}"
                 )

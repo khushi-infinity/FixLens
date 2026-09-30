@@ -4,18 +4,18 @@ FastAPI service for the FixLens camera-first repair assistant.
 
 ## Endpoints
 
-- `GET /health` — liveness probe consumed by the Android app
-- `POST /api/v1/diagnose` — image (+ optional user context) → vision model →
+- `GET /health`, liveness probe consumed by the Android app
+- `POST /api/v1/diagnose`, image (+ optional user context) → vision model →
   validated, safety-gated diagnosis
-- `POST /api/v1/plan` — validated diagnosis → deterministic safety gate →
+- `POST /api/v1/plan`, validated diagnosis → deterministic safety gate →
   repair plan (HIGH risk is blocked BEFORE any model call)
-- `POST /api/v1/assembly` — parts photo → assembly plan or an explicit
+- `POST /api/v1/assembly`, parts photo → assembly plan or an explicit
   better-view request (order is never guessed)
-- `POST /api/v1/verify` — capture + step context → PASS / FAIL / UNCERTAIN
+- `POST /api/v1/verify`, capture + step context → PASS / FAIL / UNCERTAIN
   with visual evidence (verification is isolated from diagnosis)
 
 Pipeline for every endpoint: image validation → resize/compress → provider
-selector (Gemini primary, OpenRouter fallback — configuration-driven) →
+selector (Gemini primary, OpenRouter fallback, configuration-driven) →
 strict Pydantic validation → deterministic safety policy where applicable.
 Uploaded images are processed in memory and never persisted.
 
@@ -23,7 +23,7 @@ Uploaded images are processed in memory and never persisted.
 
 Copy `.env.example` to `.env` and fill in the keys. `.env` holds real secrets
 and is git-ignored; it must never be committed. API keys always stay
-server-side — they are never embedded in the Android app.
+server-side, they are never embedded in the Android app.
 
 Key variables: `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `AI_PROVIDER`,
 `AI_FALLBACK_PROVIDER`, `GEMINI_MODELS`, `OPENROUTER_MODEL(S)`,

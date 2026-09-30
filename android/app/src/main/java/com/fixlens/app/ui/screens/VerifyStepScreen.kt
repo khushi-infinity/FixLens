@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
@@ -217,7 +218,7 @@ fun VerifyStepScreen(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "One photo, one check — nothing is analyzed continuously.",
+                text = "One photo, one check, nothing is analyzed continuously.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = FixLensColors.MutedInk,
                 textAlign = TextAlign.Center,
@@ -299,7 +300,7 @@ fun VerifyStepScreen(
 
         permission.phase == CameraPermissionPhase.GRANTED -> VerificationCapture(
             surfaceRequest = surfaceRequest,
-            stepLabel = "Step $stepNumber of $totalSteps — $stepTitle",
+            stepLabel = "Step $stepNumber of $totalSteps, $stepTitle",
             expectedState = expectedState,
             isCapturing = isCapturing,
             hasFrontCamera = previewSession.hasFrontCamera(),
@@ -409,7 +410,7 @@ private fun VerificationReview(
  *  PASS      -> "Step complete."
  *  FAIL      -> "This step doesn't appear complete. The screw is still loose."
  *  UNCERTAIN -> "I can't verify this clearly. Move the camera closer."
- * The model's explanation is always shown beneath as supporting evidence —
+ * The model's explanation is always shown beneath as supporting evidence,
  * the claim and the evidence are never conflated.
  */
 @Composable
@@ -443,6 +444,23 @@ private fun VerificationResultView(
             bodyText = result.betterViewInstruction ?: result.explanation
             tint = FixLensColors.Terracotta
             icon = Icons.Filled.HelpOutline
+        }
+    }
+
+    // Voice + haptics on the verdict: the result is spoken (on-device TTS)
+    // and felt (PASS confirms, FAIL rejects) as well as shown.
+    val view = LocalView.current
+    val voiceContext = LocalContext.current
+    val voice = remember { VoiceGuide(voiceContext) }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { voice.shutdown() }
+    }
+    androidx.compose.runtime.LaunchedEffect(result.state) {
+        voice.speak(headline)
+        when (result.state) {
+            VerificationStates.PASS -> view.hapticConfirm()
+            VerificationStates.FAIL -> view.hapticReject()
+            else -> view.hapticTick()
         }
     }
 
@@ -550,7 +568,7 @@ private fun friendlyVerifyMessage(error: ApiError): String = when (error) {
     is ApiError.NotConfigured ->
         "The backend is not configured on this device. See docs/DEVICE_SETUP.md."
     is ApiError.Timeout ->
-        "The AI is taking longer than usual right now. Please try again — it often succeeds on a second attempt."
+        "The AI is taking longer than usual right now. Please try again, it often succeeds on a second attempt."
     is ApiError.Unreachable ->
         "Could not reach the FixLens backend. Check your connection and adb reverse, then try again."
     is ApiError.Http -> error.message

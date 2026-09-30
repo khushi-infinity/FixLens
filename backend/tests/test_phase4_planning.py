@@ -1,5 +1,5 @@
 """Phase 4 tests: repair planning + assembly (schemas, parsers, safety gate,
-endpoints). No real API calls — providers are injected fakes like in
+endpoints). No real API calls, providers are injected fakes like in
 test_diagnose_endpoint.py.
 
 Key invariants under test:

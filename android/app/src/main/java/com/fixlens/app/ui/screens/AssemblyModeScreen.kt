@@ -68,7 +68,7 @@ private fun rememberAppContainer(): com.fixlens.app.di.AppContainer {
 /**
  * Phase 4 assembly mode entry: photograph disassembled parts, then receive a
  * structured assembly plan (or an explicit request for the view that would
- * determine the order — the order is never guessed).
+ * determine the order, the order is never guessed).
  */
 @Composable
 fun AssemblyCaptureScreen(
@@ -136,7 +136,7 @@ private fun AssemblyFlowScreen(
     var assemblyResult by remember { mutableStateOf<AssemblyResponseDto?>(null) }
 
     // Phase 7: in Demo Mode the assembly result is resolved as soon as the
-    // demo capture is taken — deterministically, with no AI/billing calls.
+    // demo capture is taken, deterministically, with no AI/billing calls.
     LaunchedEffect(demo, capturedFile) {
         if (demo != null && capturedFile != null && assemblyResult == null) {
             val d = demo.scenario.diagnosis
@@ -400,7 +400,7 @@ private fun AssemblyPlanScreen(
                     // Parts list (• observed / ○ inferred, same convention as diagnosis)
                     plan.parts.forEach { part ->
                         val prefix = if (part.kind.equals("INFERRED", ignoreCase = true)) "○ " else "• "
-                        val status = part.status?.let { " — $it" } ?: ""
+                        val status = part.status?.let { ", $it" } ?: ""
                         Text(
                             text = "$prefix${part.name}$status",
                             style = MaterialTheme.typography.bodyMedium,
@@ -630,7 +630,7 @@ private fun friendlyAssemblyMessage(error: ApiError): String = when (error) {
     is ApiError.NotConfigured ->
         "The backend is not configured on this device. See docs/DEVICE_SETUP.md."
     is ApiError.Timeout ->
-        "The AI is taking longer than usual right now. Please try again — it often succeeds on a second attempt."
+        "The AI is taking longer than usual right now. Please try again, it often succeeds on a second attempt."
     is ApiError.Unreachable ->
         "Could not reach the FixLens backend. Check your connection and adb reverse, then try again."
     is ApiError.Http -> error.message

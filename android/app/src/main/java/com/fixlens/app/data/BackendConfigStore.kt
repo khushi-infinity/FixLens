@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
  *       adb shell "run-as com.fixlens.app sh -c 'cat > files/fixlens.properties'"
  *
  * (Requires a debug build, the app launched once so files/ exists, and
- * `adb reverse tcp:8000 tcp:8000` — see docs/DEVICE_SETUP.md step 7.)
+ * `adb reverse tcp:8000 tcp:8000`, see docs/DEVICE_SETUP.md step 7.)
  *
  * The app must be (re)started after the file changes.
  */

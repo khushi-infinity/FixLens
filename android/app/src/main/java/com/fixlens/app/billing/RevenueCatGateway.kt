@@ -22,7 +22,7 @@ import com.revenuecat.purchases.models.StoreProduct
  * imports the SDK (same boundary discipline as the AI provider layer).
  *
  * Uses the documented await* coroutine extensions. Purchase state is ALWAYS
- * the real SDK state — FixLens never fakes, caches to disk, or persists
+ * the real SDK state, FixLens never fakes, caches to disk, or persists
  * entitlements. StoreProduct handles stay inside this class: paywall UI works
  * with plain [PaywallProduct] values, and purchases look the product back up
  * here (re-fetching offerings if needed after a process restart).
@@ -113,7 +113,7 @@ class RevenueCatGateway(private val appContext: Context) : PurchasesGateway {
 
     /**
      * Real-time entitlement updates (purchase completion, renewal, expiry).
-     * No-op until the SDK has been configured with a key — accessing the
+     * No-op until the SDK has been configured with a key, accessing the
      * singleton before configure() throws and previously crashed the app at
      * startup on unconfigured devices (caught by E2E).
      */

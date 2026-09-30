@@ -146,7 +146,7 @@ def apply_safety_policy(diagnosis: DiagnosisResult) -> Tuple[SafetyNotice, Safet
 def apply_assembly_safety_policy(assembly: AssemblyPlan) -> Tuple[SafetyNotice, SafetyLevel]:
     """Phase 4 assembly gate: same deterministic rules as apply_safety_policy,
     applied to the assembly plan's own safety_level + corpus (safety happens
-    BEFORE any step is shown — a blocked assembly plan is discarded)."""
+    BEFORE any step is shown, a blocked assembly plan is discarded)."""
     corpus = " ".join(
         [
             assembly.object_name,

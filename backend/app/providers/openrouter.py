@@ -1,4 +1,4 @@
-"""OpenRouter vision provider — configurable fallback (spec §4).
+"""OpenRouter vision provider, configurable fallback (spec §4).
 
 Speaks the OpenAI-compatible chat/completions protocol with one specifically
 configured free vision-capable model (never a random router choice). Conforms

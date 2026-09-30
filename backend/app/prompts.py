@@ -1,4 +1,4 @@
-"""FixLens prompt pack (spec §9) — exact prompts from the master spec.
+"""FixLens prompt pack (spec §9), exact prompts from the master spec.
 
 Phase 2/3 use the diagnosis prompt + JSON contract. Phase 4 adds repair-plan
 and assembly JSON contracts; Phase 5 adds the verification JSON contract.
@@ -38,7 +38,7 @@ DIAGNOSIS_JSON_CONTRACT = """Respond with ONLY a JSON object matching exactly th
 Rules:
 - confidence and each likely_causes[].confidence are between 0.0 and 1.0.
 - components: name only parts that are visible in the image (kind OBSERVED) or that a typical example of this object certainly has but you cannot see (kind INFERRED, e.g. hidden mounting hardware). Never invent a component an object of this type would not have. Include visible condition in status when a part looks damaged, loose, missing, seized, or otherwise abnormal.
-- safety_level must reflect an ACTUAL hazard visible or plausibly implied by the image. HIGH is reserved for serious injury/fire/electrocution/explosion/structural-collapse risks. An object that is intact, undamaged, or in normal condition is LOW even if the image quality is poor — use needs_better_view for uncertainty instead of inflating the safety level. Never invent a hazard that is not present.
+- safety_level must reflect an ACTUAL hazard visible or plausibly implied by the image. HIGH is reserved for serious injury/fire/electrocution/explosion/structural-collapse risks. An object that is intact, undamaged, or in normal condition is LOW even if the image quality is poor, use needs_better_view for uncertainty instead of inflating the safety level. Never invent a hazard that is not present.
 - Mark visual_evidence kind OBSERVED only for what is directly visible. Use INFERRED for assumptions and UNKNOWN when the image cannot tell.
 - If user context describing a symptom or claim is provided: use it to focus the analysis, but treat it as the user's report, NOT as visual evidence. If the image does not support the user's claim, say what the image actually shows and, when relevant, set needs_better_view to request the view that would confirm or refute it.
 - If the image is ambiguous, blurry, or does not show the issue, set needs_better_view=true and give exactly ONE specific better_view_instruction naming a camera move AND the part or detail to show. Do not return a confident diagnosis the image does not support.
@@ -50,7 +50,7 @@ Each step must have an action, target component, tool if needed, expected visual
 Do not include a step that the safety policy marks as high risk."""
 
 # Phase 4 JSON contract for POST /api/v1/plan. Consumes a validated diagnosis
-# (already safety-gated) and emits strict structured steps — no prose to parse.
+# (already safety-gated) and emits strict structured steps, no prose to parse.
 REPAIR_PLAN_JSON_CONTRACT = """Respond with ONLY a JSON object matching exactly this shape:
 {
   "object_name": "string (same object as the diagnosis)",
@@ -74,7 +74,7 @@ Rules:
 - steps must be the SMALLEST safe sequence for a normal user with no special skills; 2-6 steps unless the repair genuinely needs more.
 - Every step must act on a component the diagnosis supports. Never invent parts.
 - Only claim tool_known=true when the fastener/part in the diagnosis clearly determines the tool. If the screw head type is not identifiable, set tool_known=false and put a generic honest fallback in tool_note (e.g. 'Use the appropriate screwdriver for this screw.').
-- Each step's warning must be specific or null — never a boilerplate disclaimer.
+- Each step's warning must be specific or null, never a boilerplate disclaimer.
 - expected_state must describe something the user can visually check.
 - Use plain language a non-expert understands. No jargon without explanation.
 - If the diagnosis does not contain enough evidence to plan a step, omit that step. Never fabricate.
@@ -84,7 +84,7 @@ ASSEMBLY_PROMPT = """Given the image of disassembled or partially assembled part
 Do not force an assembly order the visual evidence does not support. If you cannot determine the order from this view, request one specific additional view."""
 
 # Phase 4 JSON contract for the assembly flow. order_confident=false means the
-# plan carries NO steps — the model must ask for the view that settles order.
+# plan carries NO steps, the model must ask for the view that settles order.
 ASSEMBLY_JSON_CONTRACT = """Respond with ONLY a JSON object matching exactly this shape:
 {
   "object_name": "string (the assembled thing these parts form)",
@@ -121,7 +121,7 @@ VERIFICATION_PROMPT = """Compare the current image with the expected state for t
 # Phase 5 JSON contract for POST /api/v1/verify. The expected_state text is
 # what the plan promised the user would SEE after the step; the image is a
 # fresh capture of the object now. UNCERTAIN is the honest fallback whenever
-# the image does not clearly settle the comparison — the model must never
+# the image does not clearly settle the comparison, the model must never
 # guess a PASS.
 VERIFY_JSON_CONTRACT = """Respond with ONLY a JSON object matching exactly this shape:
 {
@@ -132,7 +132,7 @@ VERIFY_JSON_CONTRACT = """Respond with ONLY a JSON object matching exactly this 
   "better_view_instruction": "string or null (REQUIRED when state is UNCERTAIN: ONE specific camera change, e.g. 'Move the camera closer to the screw and fill the frame with it.')"
 }
 Rules:
-- PASS only when the image clearly shows the expected state is achieved. When the image is not clearly conclusive, choose UNCERTAIN — never guess a PASS.
+- PASS only when the image clearly shows the expected state is achieved. When the image is not clearly conclusive, choose UNCERTAIN, never guess a PASS.
 - FAIL when the image clearly shows the expected state is NOT achieved (the relevant part is visibly unchanged, still loose, still misaligned, etc.).
 - UNCERTAIN when the relevant part is not visible, the framing/angle/lighting prevents the comparison, or you cannot tell either way. UNCERTAIN always requires needs_better_view=true and exactly ONE better_view_instruction naming a camera move AND the part to show.
 - confidence is between 0.0 and 1.0 and must reflect how clearly the image settles the decision. Low clarity means low confidence.

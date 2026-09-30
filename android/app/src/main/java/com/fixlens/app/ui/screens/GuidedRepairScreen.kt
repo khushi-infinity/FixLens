@@ -69,9 +69,9 @@ private fun rememberAppContainer(): com.fixlens.app.di.AppContainer {
 
 /**
  * Phase 4 guided repair flow entry (spec §17.6). Generates the repair plan
- * ONCE from the confirmed diagnosis (explicit user action — no per-frame AI),
+ * ONCE from the confirmed diagnosis (explicit user action, no per-frame AI),
  * then hands over to the step-by-step guidance screen. Loading, backend
- * errors, and blocked plans all offer Retry / Back — never a dead end.
+ * errors, and blocked plans all offer Retry / Back, never a dead end.
  */
 @Composable
 fun GuidedRepairScreen(
@@ -88,7 +88,7 @@ fun GuidedRepairScreen(
     var creditConsumed by remember { mutableStateOf(false) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-    // Phase 7: Demo Mode short-circuits BEFORE any network/billing call —
+    // Phase 7: Demo Mode short-circuits BEFORE any network/billing call,
     // the plan comes from pre-authored content, deterministically.
     androidx.compose.runtime.LaunchedEffect(retryToken, demo) {
         if (demo != null) {
@@ -100,7 +100,7 @@ fun GuidedRepairScreen(
     }
 
     // Phase 6 premium gate: guided repair is a Pro/credit feature (spec §12).
-    // The plan has not been generated yet at this point — the gate decides
+    // The plan has not been generated yet at this point, the gate decides
     // BEFORE any generation; a credit is spent only when the plan arrives.
     if (paywallReason != null) {
         PaywallScreen(
@@ -146,7 +146,7 @@ fun GuidedRepairScreen(
         is GuidedPlanState.Ready -> {
             // Spend the credit only once, only when the plan actually arrived
             // (free plan: premium actions consume a repair credit). Demo Mode
-            // is never metered or gated — it demonstrates the full UX.
+            // is never metered or gated, it demonstrates the full UX.
             androidx.compose.runtime.LaunchedEffect(state.response) {
                 if (demo == null && !creditConsumed &&
                     !container.billingRepository.state.value.isPro &&
@@ -179,7 +179,7 @@ private fun friendlyPlanMessage(error: ApiError): String = when (error) {
     is ApiError.NotConfigured ->
         "The backend is not configured on this device. See docs/DEVICE_SETUP.md."
     is ApiError.Timeout ->
-        "The AI is taking longer than usual right now. Please try again — it often succeeds on a second attempt."
+        "The AI is taking longer than usual right now. Please try again, it often succeeds on a second attempt."
     is ApiError.Unreachable ->
         "Could not reach the FixLens backend. Check your connection and adb reverse, then try again."
     is ApiError.Http -> error.message
@@ -188,7 +188,7 @@ private fun friendlyPlanMessage(error: ApiError): String = when (error) {
 }
 
 /**
- * Renders an already-generated plan. Visual, button-driven guidance —
+ * Renders an already-generated plan. Visual, button-driven guidance,
  * no chat input anywhere. The plan is kept in memory for the session; the
  * state machine ([RepairEngine]) owns all progress logic. When a step reaches
  * READY_FOR_VERIFICATION the verification capture flow intercepts that exact
@@ -209,6 +209,7 @@ private fun GuidedPlanScreen(
 
     val engine = remember { RepairEngine() }
     val container = rememberAppContainer()
+    val view = androidx.compose.ui.platform.LocalView.current
     val loaded = remember(planResponse) {
         engine.loadPlan(
             planResponse.plan.toSessionPlan(
@@ -225,7 +226,7 @@ private fun GuidedPlanScreen(
     var showDifficultDialog by remember { mutableStateOf(false) }
     // Set when the user declines verification for the CURRENT step (UNCERTAIN
     // → "Skip verification for now"); resets automatically per step. A skipped
-    // step completes on the user's own confirmation — never worded as verified.
+    // step completes on the user's own confirmation, never worded as verified.
     val verificationSkipped = remember(state.currentStepNumber) { mutableStateOf(false) }
 
     // Voice guide: on-device TTS, one instance for the whole guided session.
@@ -235,7 +236,7 @@ private fun GuidedPlanScreen(
         onDispose { voice.shutdown() }
     }
     // Silence the voice whenever the step view is left (verification camera,
-    // Show Me camera) — speech resumes fresh on the next step screen.
+    // Show Me camera), speech resumes fresh on the next step screen.
     LaunchedEffect(state.phase, showMe) {
         if (showMe || state.phase == EnginePhase.READY_FOR_VERIFICATION) voice.stop()
     }
@@ -251,7 +252,7 @@ private fun GuidedPlanScreen(
     }
 
     // Auto-start for LOW-risk plans: the engine must be IN_PROGRESS before
-    // ConfirmStep/SkipStep become legal (found via E2E — without this the
+    // ConfirmStep/SkipStep become legal (found via E2E, without this the
     // step pointer never advanced). MEDIUM plans start via AcknowledgeSafety.
     LaunchedEffect(state.phase, state.plan.requiresAcknowledgement) {
         if (state.phase == EnginePhase.PLAN_READY &&
@@ -262,10 +263,10 @@ private fun GuidedPlanScreen(
         }
     }
 
-    // Phase 5 seam: READY_FOR_VERIFICATION is no longer auto-advanced —
+    // Phase 5 seam: READY_FOR_VERIFICATION is no longer auto-advanced,
     // it opens the camera verification flow (user action → capture → one
     // AI verification call → result). The step completes only through the
-    // engine's Advance intent, which the UI dispatches solely on PASS —
+    // engine's Advance intent, which the UI dispatches solely on PASS,
     // except when the user explicitly declined verification for this step.
     if (state.phase == EnginePhase.READY_FOR_VERIFICATION) {
         val step = state.currentStep
@@ -287,7 +288,7 @@ private fun GuidedPlanScreen(
                     engine.dispatch(RepairIntent.Advance) // PASS → step COMPLETE
                 },
                 onIncomplete = {
-                    // FAIL: the capture shows the step is not done — the
+                    // FAIL: the capture shows the step is not done, the
                     // user returns to the step with the evidence.
                     engine.dispatch(RepairIntent.MarkAttempted)
                 },
@@ -313,7 +314,7 @@ private fun GuidedPlanScreen(
             ShowMeCameraScreen(
                 targetLabel = step.targetComponent,
                 instruction = step.action,
-                stepLabel = "Step ${step.number} of ${state.totalSteps} — ${step.title}",
+                stepLabel = "Step ${step.number} of ${state.totalSteps}, ${step.title}",
                 onBack = { showMe = false },
             )
         }
@@ -358,6 +359,7 @@ private fun GuidedPlanScreen(
             onShowMe = { showMe = true },
             onDone = {
                 showWhy = false
+                view.hapticTick()
                 engine.dispatch(RepairIntent.ConfirmStep)
             },
             onDifficult = { showDifficultDialog = true },
@@ -474,7 +476,7 @@ private fun StepView(
                 )
             }
             Spacer(Modifier.weight(1f))
-            // Voice guide mute toggle — on-device speech, never a network call.
+            // Voice guide mute toggle, on-device speech, never a network call.
             IconButton(onClick = {
                 voiceMuted = !voiceMuted
                 voice.setMuted(voiceMuted)
@@ -486,7 +488,7 @@ private fun StepView(
                     tint = FixLensColors.Ink,
                 )
             }
-            // Phase 8: the scripted result must never pass for live AI —
+            // Phase 8: the scripted result must never pass for live AI,
             // the demo banner rides on every guided step too.
         }
         if (demo != null) DemoBanner()
@@ -526,7 +528,7 @@ private fun StepView(
             }
 
             // Tool: only a determined tool is named; otherwise the honest generic.
-            GuidedCard(title = if (toolKnown) "TOOL" else "TOOL — NOT SURE WHICH") {
+            GuidedCard(title = if (toolKnown) "TOOL" else "TOOL, NOT SURE WHICH") {
                 if (toolKnown && !tool.isNullOrBlank()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -596,7 +598,7 @@ private fun StepView(
 
             if (safetyLevel.equals("MEDIUM", ignoreCase = true)) {
                 Text(
-                    text = "Limited guidance — work slowly and stop if anything looks unsafe.",
+                    text = "Limited guidance, work slowly and stop if anything looks unsafe.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = FixLensColors.Terracotta,
                 )
@@ -709,7 +711,7 @@ private fun SafetyAcknowledgementView(
                 contentColor = FixLensColors.Cream,
             ),
         ) {
-            Text("I Understand — Continue", style = MaterialTheme.typography.labelLarge)
+            Text("I Understand, Continue", style = MaterialTheme.typography.labelLarge)
         }
         OutlinedButton(
             onClick = onExit,
@@ -729,7 +731,9 @@ private fun CompletionView(
     demo: DemoContext? = null,
     voice: VoiceGuide? = null,
 ) {
+    val view = androidx.compose.ui.platform.LocalView.current
     androidx.compose.runtime.LaunchedEffect(Unit) {
+        view.hapticConfirm()
         voice?.speak(message)
     }
     Column(
@@ -759,7 +763,7 @@ private fun CompletionView(
         )
         Spacer(modifier = Modifier.height(10.dp))
         Text(
-            text = "$objectName — $totalSteps guided steps",
+            text = "$objectName, $totalSteps guided steps",
             style = MaterialTheme.typography.bodyMedium,
             color = FixLensColors.MutedInk,
         )
@@ -790,6 +794,10 @@ private fun GuidedBlockedState(
     onRequestBetterView: () -> Unit,
 ) {
     val isBetterView = planResponse.status == PlanStatuses.BLOCKED_BETTER_VIEW
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.LaunchedEffect(planResponse.status) {
+        if (planResponse.status == PlanStatuses.BLOCKED_HIGH_RISK) view.hapticReject()
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

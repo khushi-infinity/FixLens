@@ -69,7 +69,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.exifinterface)
-    // RevenueCat monetization (Phase 6). The API key is NEVER compiled in —
+    // RevenueCat monetization (Phase 6). The API key is NEVER compiled in,
     // it is a developer-provided device config value (see BillingConfig).
     implementation(libs.revenuecat.purchases)
 

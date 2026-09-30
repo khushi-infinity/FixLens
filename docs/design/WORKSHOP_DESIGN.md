@@ -1,4 +1,4 @@
-# FixLens — Workshop Design Notes
+# FixLens, Workshop Design Notes
 
 The visual identity: an **illustrated workshop journal** rendered in Compose.
 An AI technician that looks hand-made, not machine-made.
@@ -12,7 +12,7 @@ Defined once in `android/app/src/main/java/com/fixlens/app/ui/theme/Theme.kt`
 |---|---|---|
 | Paper | `#F5F1E7` | App background; `paperSurface()` adds deterministic grain flecks |
 | Cream | `#FCF9F2` | Cards, raised surfaces, on-primary text |
-| Ink | `#343A36` | Text and outlines — deep charcoal, never pure black |
+| Ink | `#343A36` | Text and outlines, deep charcoal, never pure black |
 | MutedInk | `#636960` | Secondary text |
 | Terracotta | `#995238` | Primary actions, progress, accents |
 | ClayWash | `#EBD7C8` | Warm tint containers |
@@ -27,27 +27,27 @@ Defined once in `android/app/src/main/java/com/fixlens/app/ui/theme/Theme.kt`
 ## Typography (`Type.kt`)
 
 - **Serif display** (`FontFamily.Serif`) for `display*`, `headline*`,
-  `titleLarge` — editorial "repair manual" voice.
-- **Humanist sans** for everything instructional and functional — friendly,
+  `titleLarge`, editorial "repair manual" voice.
+- **Humanist sans** for everything instructional and functional, friendly,
   legible, respects accessibility font scaling. System families only: no font
   downloads, fully offline.
 
 ## Hand-drawn details (`ui/theme/Workshop.kt`)
 
-- `Modifier.paperSurface()` — deterministic paper-grain flecks (seeded
+- `Modifier.paperSurface()`, deterministic paper-grain flecks (seeded
   `Random(41)`), cached with `drawWithCache` so it never re-animates.
-- `SketchTarget` — the camera annotation: an irregular ink contour and a
+- `SketchTarget`, the camera annotation: an irregular ink contour and a
   pencilled arrow drawn with `Canvas`. Framing aid only; never claims to be a
   detected component.
-- `CameraPaperBands` — opaque paper strips behind camera controls so
+- `CameraPaperBands`, opaque paper strips behind camera controls so
   charcoal-on-cream stays legible on any scene.
-- `CameraFieldNote` — cream note card with uneven corner radii.
+- `CameraFieldNote`, cream note card with uneven corner radii.
 - Cards across the app use slightly irregular `RoundedCornerShape(r1, r2,
-  r3, r4)` values — subtle imperfection, on purpose.
+  r3, r4)` values, subtle imperfection, on purpose.
 
 ## Icon
 
-`assets/icon_1024.png` — watercolor paper, sage/lavender/clay washes, a
+`assets/icon_1024.png`, watercolor paper, sage/lavender/clay washes, a
 sketchy double-ring charcoal lens, terracotta scan arc, dial ticks. Generated
 programmatically; regenerate with the PIL script used for the submission.
 

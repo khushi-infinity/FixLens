@@ -23,7 +23,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Phase 6 tests: the monetization RULES (BillingGate — pure) and the
+ * Phase 6 tests: the monetization RULES (BillingGate, pure) and the
  * repository behavior against a FAKE gateway (real RevenueCat is exercised
  * on-device). The repository state must reflect the gateway exactly:
  * entitlements are never invented, credits never granted twice.
@@ -90,7 +90,7 @@ class BillingTest {
     fun `month key is a calendar month`() {
         // 2026-09-29T00:00:00Z in UTC
         assertEquals("2026-09", BillingGate.monthKey(1790707200000L, java.time.ZoneId.of("UTC")))
-        // 2026-10-01T00:00:00Z — next month
+        // 2026-10-01T00:00:00Z, next month
         assertEquals("2026-10", BillingGate.monthKey(1790966400000L, java.time.ZoneId.of("UTC")))
     }
 

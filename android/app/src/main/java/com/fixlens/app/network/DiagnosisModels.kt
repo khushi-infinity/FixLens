@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Wire models for POST /api/v1/diagnose — mirrors backend/app/schemas.py.
+ * Wire models for POST /api/v1/diagnose, mirrors backend/app/schemas.py.
  * Field names match the backend's JSON exactly; unknown fields are ignored.
  * Phase 3 adds `components`, `observations` (renamed from visual_evidence)
  * and `confidence_band` (controlled confidence representation).

@@ -22,7 +22,7 @@ import java.io.IOException
 
 /** Failure kinds the UI can react to without parsing provider-specific details. */
 sealed class ApiError : Exception() {
-    /** Config is missing/malformed — the developer must fix device config. */
+    /** Config is missing/malformed, the developer must fix device config. */
     class NotConfigured(message: String) : ApiError()
 
     /** Backend unreachable, timeout, or DNS failure. */
@@ -34,7 +34,7 @@ sealed class ApiError : Exception() {
      * [Unreachable]: the backend may still be generating, so the honest
      * message asks the user to retry rather than blaming the connection
      * (Phase 8: an 86 s free-tier diagnose once surfaced as "could not
-     * reach" because 90 s was too tight — the wording must not lie).
+     * reach" because 90 s was too tight, the wording must not lie).
      */
     class Timeout(override val message: String) : ApiError()
 
@@ -48,7 +48,7 @@ sealed class ApiError : Exception() {
 /**
  * Phase 1 API surface. Exactly one endpoint is implemented: GET /health.
  * The abstraction (config injection + typed errors) is what later phases build
- * diagnosis/plan/target/verify calls on top of — no provider logic lives here.
+ * diagnosis/plan/target/verify calls on top of, no provider logic lives here.
  */
 class ApiClient private constructor(
     private val config: BackendConfig,
@@ -100,10 +100,10 @@ class ApiClient private constructor(
     /**
      * Phase 2: sends one JPEG to POST /api/v1/diagnose and returns the
      * normalized diagnosis + deterministic safety decision. The backend owns
-     * provider selection, validation, and safety gating — the app only renders
+     * provider selection, validation, and safety gating, the app only renders
      * the validated result and maps transport failures to honest UI states.
      *
-     * Phase 7 reliability: the AI timeout is per-call (image calls are slow —
+     * Phase 7 reliability: the AI timeout is per-call (image calls are slow,
      * plan/verify/diagnose get a generous window) so a stalled backend can
      * never wedge the UI on the shared 20s config timeout.
      */
@@ -134,7 +134,7 @@ class ApiClient private constructor(
 
     /**
      * Phase 4: asks the backend to turn a validated diagnosis into a
-     * structured repair plan. The full diagnosis JSON is sent as the body —
+     * structured repair plan. The full diagnosis JSON is sent as the body,
      * the backend re-validates it and runs the deterministic safety gate
      * BEFORE any generation (HIGH risk never reaches the model).
      */
@@ -195,7 +195,7 @@ class ApiClient private constructor(
 
     /**
      * Phase 5: verifies one completed step against a fresh capture. One frame
-     * per explicit user action — the client never streams frames (spec §15).
+     * per explicit user action, the client never streams frames (spec §15).
      * The backend re-validates the image with the same quality gate as
      * diagnosis and judges expected-vs-observed only; verification is kept
      * strictly separate from diagnosis (spec §17.7).
@@ -236,7 +236,7 @@ class ApiClient private constructor(
         timeoutMillis: Long = config.timeoutMillis,
         parse: (String) -> T,
     ): T {
-        // Network I/O must never run on the Main dispatcher — the UI calls
+        // Network I/O must never run on the Main dispatcher, the UI calls
         // suspend functions from lifecycleScope (Main). Moving off Main here
         // protects every current and future endpoint, not just this call site.
         return withContext(Dispatchers.IO) {
@@ -263,11 +263,11 @@ class ApiClient private constructor(
             client.newCall(request).execute()
         } catch (e: java.io.IOException) {
             // OkHttp surfaces a read/write timeout as SocketTimeoutException
-            // (an IOException subclass) — it means the backend was reached but
+            // (an IOException subclass), it means the backend was reached but
             // did not answer in time, which deserves its own honest wording.
             if (e is java.net.SocketTimeoutException) {
                 throw ApiError.Timeout(
-                    "This is taking longer than expected — the AI is busy right now. " +
+                    "This is taking longer than expected, the AI is busy right now. " +
                         "Please try again in a moment.",
                 )
             }
@@ -280,7 +280,7 @@ class ApiClient private constructor(
             val bodyString = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
                 // The backend sends {"detail": "user-friendly message"} on
-                // controlled errors — surface that text instead of a bare code.
+                // controlled errors, surface that text instead of a bare code.
                 val detail = runCatching {
                     json.parseToJsonElement(bodyString).jsonObject["detail"]?.jsonPrimitive?.content
                 }.getOrNull()

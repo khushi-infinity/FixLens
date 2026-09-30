@@ -6,8 +6,8 @@ package com.fixlens.app.demo
  * stuck chair, furniture assembly, unsafe wiring).
  *
  * Everything here is PROVIDER-AGNOSTIC data. Demo Mode maps it into the very
- * same DTOs/session shapes the live pipeline produces, so the entire UX —
- * result screen, guidance, verification, safety stop — renders through the
+ * same DTOs/session shapes the live pipeline produces, so the entire UX,
+ * result screen, guidance, verification, safety stop, renders through the
  * unmodified production screens. No backend, no AI, no billing, no clock:
  * the content is constant, which is the point of a demo.
  *
@@ -44,7 +44,7 @@ object DemoScenarios {
     )
 
     // ------------------------------------------------------------------
-    // Journey 1 — stuck office chair: full guided repair with verification
+    // Journey 1, stuck office chair: full guided repair with verification
     // ------------------------------------------------------------------
 
     val chairDiagnosis: DemoDiagnosis = DemoDiagnosis(
@@ -102,13 +102,13 @@ object DemoScenarios {
                 "Spray a short burst of penetrating oil where the gas lift meets the mechanism, " +
                     "wait two minutes, then rotate the seat several full turns to spread it.",
             targetComponent = "central mechanism",
-            warning = "Do not spray oil onto the floor or casters — it becomes slippery.",
+            warning = "Do not spray oil onto the floor or casters, it becomes slippery.",
             expectedState = "The seat rotates freely through full turns.",
         ),
     )
 
     // ------------------------------------------------------------------
-    // Journey 2 — furniture assembly: parts, order, steps, verification
+    // Journey 2, furniture assembly: parts, order, steps, verification
     // ------------------------------------------------------------------
 
     val assemblyDiagnosis: DemoDiagnosis = DemoDiagnosis(
@@ -161,7 +161,7 @@ object DemoScenarios {
                 "Start each bolt by hand to avoid cross-threading, then snug them a quarter turn " +
                     "with the hex key. Do not fully tighten yet.",
             targetComponent = "M6 hex bolts",
-            warning = "Hand-start the bolts — power tools easily strip these threads.",
+            warning = "Hand-start the bolts, power tools easily strip these threads.",
             expectedState = "Both bolts hold the cross-member; the joint still flexes slightly.",
         ),
     )
@@ -174,7 +174,7 @@ object DemoScenarios {
     )
 
     // ------------------------------------------------------------------
-    // Journey 3 — unsafe wiring: hazard → SAFETY_STOP → referral
+    // Journey 3, unsafe wiring: hazard → SAFETY_STOP → referral
     // ------------------------------------------------------------------
 
     val wiringDiagnosis: DemoDiagnosis = DemoDiagnosis(
@@ -204,7 +204,7 @@ object DemoScenarios {
         verificationExplanation = null,
     )
 
-    /** One entry per scenario kind — the full pre-authored journey. */
+    /** One entry per scenario kind, the full pre-authored journey. */
     fun scenarioFor(kind: Kind): DemoJourney = when (kind) {
         Kind.CHAIR_GUIDED_REPAIR -> DemoJourney(diagnosis = chairDiagnosis, steps = chairSteps)
         Kind.ASSEMBLY -> DemoJourney(diagnosis = assemblyDiagnosis, steps = assemblySteps)

@@ -43,7 +43,7 @@ class DataStoreBillingStorage(context: Context) : BillingStorage {
     private val dataStore = context.billingDataStore
 
     override suspend fun load(): StoredBillingState {
-        // dataStore.data is an INFINITE flow — read with first(), never collect.
+        // dataStore.data is an INFINITE flow, read with first(), never collect.
         val prefs = dataStore.data.first()
         return StoredBillingState(
             scansThisMonth = prefs[KEY_SCANS] ?: 0,
@@ -79,7 +79,7 @@ private val Context.billingDataStore by preferencesDataStore(name = "fixlens_bil
  *   kept fresh via the SDK's customer-info listener. Never cached to disk,
  *   never faked, never inferred from purchases.
  * - Scan allowance: 3 per calendar month for free users (device-local
- *   counter — a courtesy gate for honest users, not an anti-fraud boundary).
+ *   counter, a courtesy gate for honest users, not an anti-fraud boundary).
  * - Repair credits: granted exactly once per completed one-time purchase,
  *   tracked by RevenueCat transaction id.
  *

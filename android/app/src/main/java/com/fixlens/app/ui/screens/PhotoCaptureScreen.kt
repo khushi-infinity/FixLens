@@ -69,7 +69,7 @@ private fun rememberAppContainer(): com.fixlens.app.di.AppContainer {
  * Photo Mode entry point: capture a photo, review, confirm.
  * Source is tagged PHOTO_MODE in the local repair history.
  * Phase 4: Start Fix routes the confirmed diagnosis into guided repair.
- * Phase 6: monetization gate before analysis — free plan = 3 scans/month;
+ * Phase 6: monetization gate before analysis, free plan = 3 scans/month;
  * when exhausted, Pro or a credit unlocks the scan (paywall, never a
  * hard block on the camera itself).
  */
@@ -294,7 +294,7 @@ fun CaptureFlowScreen(
                     try {
                         captureStore.saveConfirmedCapture(file, source)
                         // Phase 8: upload at model resolution, not camera
-                        // resolution — identical AI results, much faster wire.
+                        // resolution, identical AI results, much faster wire.
                         val uploadFile = withContext(Dispatchers.IO) {
                             com.fixlens.app.imaging.UploadPrep.prepare(context, file)
                         }
@@ -425,7 +425,7 @@ private fun CapturedImageReview(
         }
         if (backendStatus is BackendStatus.Checking) {
             Text(
-                text = "Analyzing — one photo, one check. Nothing is scanned continuously.",
+                text = "Analyzing, one photo, one check. Nothing is scanned continuously.",
                 color = FixLensColors.Ink,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
@@ -444,7 +444,7 @@ private fun friendlyAnalysisMessage(error: ApiError): String = when (error) {
     is ApiError.NotConfigured ->
         "The backend is not configured on this device. See docs/DEVICE_SETUP.md."
     is ApiError.Timeout ->
-        "The AI is taking longer than usual right now. Please try again — it often succeeds on a second attempt."
+        "The AI is taking longer than usual right now. Please try again, it often succeeds on a second attempt."
     is ApiError.Unreachable ->
         "Could not reach the FixLens backend. Check your connection and adb reverse, then try again."
     is ApiError.Http -> error.message // backend controlled detail (400/502/503)
