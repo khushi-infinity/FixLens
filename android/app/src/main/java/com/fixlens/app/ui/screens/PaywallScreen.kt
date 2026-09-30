@@ -109,6 +109,7 @@ fun PaywallScreen(
     var messageIsError by remember { mutableStateOf(false) }
     var showNativePaywall by remember { mutableStateOf(false) }
     var showCustomerCenter by remember { mutableStateOf(false) }
+    var rewardedLoading by remember { mutableStateOf(false) }
 
     // RevenueCat native Paywall (dashboard-designed templates). A completed
     // purchase flips the real entitlement through the repository's customer
@@ -350,6 +351,63 @@ fun PaywallScreen(
                     }
                 }
             }
+        }
+
+        // Catvertising: an honest, opt-in rewarded ad for free users out of
+        // scans. Pro users never see this; safety info is never ad-gated.
+        if (state.configured && !state.isPro) {
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = {
+                    val activity = context as? android.app.Activity ?: return@OutlinedButton
+                    rewardedLoading = true
+                    message = null
+                    com.fixlens.app.ads.TrackedAds.loadRewarded(
+                        activity = activity,
+                        onLoaded = { ad ->
+                            rewardedLoading = false
+                            com.fixlens.app.ads.TrackedAds.showRewarded(
+                                activity = activity,
+                                ad = ad,
+                                onEarned = {
+                                    scope.launch {
+                                        repository.grantBonusScan()
+                                        message = "Bonus scan unlocked, thanks for supporting FixLens."
+                                        messageIsError = false
+                                        view.hapticConfirm()
+                                    }
+                                },
+                                onDone = {},
+                            )
+                        },
+                        onUnavailable = { reason ->
+                            rewardedLoading = false
+                            message = "No ad available right now ($reason). Try again in a moment."
+                            messageIsError = true
+                        },
+                    )
+                },
+                enabled = !rewardedLoading,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                if (rewardedLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = FixLensColors.Terracotta,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("Watch a short ad for 1 bonus scan")
+            }
+            Text(
+                text = "Optional and only for free users out of scans. Safety warnings " +
+                    "never require watching anything.",
+                style = MaterialTheme.typography.bodySmall,
+                color = FixLensColors.MutedInk,
+                textAlign = TextAlign.Center,
+            )
         }
 
         message?.let {

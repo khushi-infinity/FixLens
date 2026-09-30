@@ -74,6 +74,13 @@ dependencies {
     implementation(libs.revenuecat.purchases)
     // RevenueCat UI SDK: native Paywalls presentation + Customer Center.
     implementation(libs.revenuecat.purchases.ui)
+    // RevenueCat Ads: AdMob adapter tracks ad events + impression-level
+    // revenue against the same customer as subscriptions (Catvertising).
+    implementation(libs.revenuecat.purchases.admob)
+    implementation(libs.play.services.ads)
+    // Real Guava so ListenableFuture classes exist (AdMob resolves the empty
+    // stub artifact, which breaks CameraX's ProcessCameraProvider.getInstance).
+    implementation(libs.guava)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockwebserver)

@@ -169,11 +169,13 @@ lives in the device config file, never in source:
 1. Create a RevenueCat project (the Test Store is created automatically).
 2. In the Product catalog, create the spec §12 products on the Test Store and
    attach them to the current offering:
-   - `fixlens_monthly`, $7.99 / month
-   - `fixlens_annual`, $59.99 / year
+   - `fixlens_monthly`, $9.99 / month
+   - `fixlens_annual`, $79.99 / year
+   - `fixlens_lifetime`, $99.99 one-time (also attaches `fixlens_pro`)
    - `fixlens_repair_pack_5`, $3.99 one-time
    - `fixlens_repair_pack_10`, $6.99 one-time
-   - Entitlement: `fixlens_pro` (both subscriptions attach it)
+   - Entitlement: `fixlens_pro` (both subscriptions AND the lifetime product
+     attach it; a paywall diagnostic appears if a product is missing)
 3. Copy the **Test Store API key** and add it to the device config:
 
    ```bash
@@ -188,6 +190,15 @@ lives in the device config file, never in source:
 
 Without a key the app stays in free mode: the paywall shows an explicit
 "not configured" state and purchases are disabled, nothing is faked.
+
+### Rewarded bonus scan (Catvertising)
+
+The single rewarded placement (`scan_unlock_rewarded`) runs on Google's
+official AdMob **test** ad unit in this build (app id and ad unit id are in
+`AndroidManifest.xml` and `ads/TrackedAds.kt`), so testing never generates
+revenue. Before any store release, swap both ids for real AdMob values and
+enable the AdMob-RevenueCat impression link in the RevenueCat dashboard so
+ad revenue joins subscription revenue in one LTV view.
 
 Test-store subscriptions renew on a compressed schedule (a 1-month test
 product renews every ~5 minutes, up to 5 renewals), useful for watching

@@ -27,6 +27,8 @@ data class StoredBillingState(
     val scansThisMonth: Int = 0,
     val allowanceMonth: String = "",
     val creditBalance: Int = 0,
+    /** Extra scans earned via rewarded ads, spend first, this month only. */
+    val bonusScans: Int = 0,
     /** RevenueCat transaction ids already credited (exactly-once grants). */
     val grantedTransactionIds: Set<String> = emptySet(),
 )
@@ -49,6 +51,7 @@ class DataStoreBillingStorage(context: Context) : BillingStorage {
             scansThisMonth = prefs[KEY_SCANS] ?: 0,
             allowanceMonth = prefs[KEY_MONTH] ?: "",
             creditBalance = prefs[KEY_CREDITS] ?: 0,
+            bonusScans = prefs[KEY_BONUS] ?: 0,
             grantedTransactionIds = prefs[KEY_GRANTED] ?: emptySet(),
         )
     }
@@ -58,6 +61,7 @@ class DataStoreBillingStorage(context: Context) : BillingStorage {
             prefs[KEY_SCANS] = state.scansThisMonth
             prefs[KEY_MONTH] = state.allowanceMonth
             prefs[KEY_CREDITS] = state.creditBalance
+            prefs[KEY_BONUS] = state.bonusScans
             prefs[KEY_GRANTED] = state.grantedTransactionIds
         }
     }
@@ -66,6 +70,7 @@ class DataStoreBillingStorage(context: Context) : BillingStorage {
         val KEY_SCANS = intPreferencesKey("scans_this_month")
         val KEY_MONTH = stringPreferencesKey("allowance_month")
         val KEY_CREDITS = intPreferencesKey("repair_credits")
+        val KEY_BONUS = intPreferencesKey("bonus_scans")
         val KEY_GRANTED = stringSetPreferencesKey("credited_transactions")
     }
 }
@@ -103,6 +108,8 @@ class BillingRepository(
         /** Scans used in the CURRENT calendar month (free allowance counter). */
         val scansThisMonth: Int = 0,
         val creditBalance: Int = 0,
+        /** Extra scans earned via rewarded ads (this calendar month). */
+        val bonusScans: Int = 0,
         /** True while the first customer-state fetch is in flight. */
         val loading: Boolean = true,
     ) {
@@ -127,6 +134,7 @@ class BillingRepository(
         _state.value = _state.value.copy(
             scansThisMonth = if (stored.allowanceMonth == now) stored.scansThisMonth else 0,
             creditBalance = stored.creditBalance,
+            bonusScans = if (stored.allowanceMonth == now) stored.bonusScans else 0,
         )
         syncFromRevenueCat()
     }
@@ -195,6 +203,7 @@ class BillingRepository(
         isPro = _state.value.isPro,
         scanCountThisMonth = effectiveScansThisMonth(),
         creditBalance = _state.value.creditBalance,
+        bonusScans = _state.value.bonusScans,
     )
 
     /** Whether a premium action (guided repair, assembly) may proceed. */
@@ -203,6 +212,24 @@ class BillingRepository(
         scanCountThisMonth = effectiveScansThisMonth(),
         creditBalance = _state.value.creditBalance,
     )
+
+    /**
+     * Grants one bonus scan earned from a rewarded ad (Catvertising).
+     * Month-scoped like the free allowance; a rewarded view can never be
+     * double-counted because the grant only ever runs on the reward callback.
+     */
+    suspend fun grantBonusScan() {
+        val now = BillingGate.monthKey(clock())
+        val stored = storage.load()
+        val updated = if (now != stored.allowanceMonth) {
+            stored.copy(bonusScans = 1, allowanceMonth = now, scansThisMonth = 0)
+        } else {
+            stored.copy(bonusScans = stored.bonusScans + 1, allowanceMonth = now)
+        }
+        storage.save(updated)
+        monthKey = now
+        _state.value = _state.value.copy(bonusScans = updated.bonusScans)
+    }
 
     /** Counts a completed scan against the current month's allowance. */
     suspend fun recordScan() {
@@ -224,6 +251,14 @@ class BillingRepository(
         val updated = stored.copy(creditBalance = (stored.creditBalance - 1).coerceAtLeast(0))
         storage.save(updated)
         _state.value = _state.value.copy(creditBalance = updated.creditBalance)
+    }
+
+    /** Spends one rewarded-ad bonus scan (a completed scan consumed it). */
+    suspend fun consumeBonusScan() {
+        val stored = storage.load()
+        val updated = stored.copy(bonusScans = (stored.bonusScans - 1).coerceAtLeast(0))
+        storage.save(updated)
+        _state.value = _state.value.copy(bonusScans = updated.bonusScans)
     }
 
     /**

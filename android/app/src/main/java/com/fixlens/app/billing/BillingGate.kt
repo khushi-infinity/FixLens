@@ -36,6 +36,7 @@ object BillingGate {
         PRO_ENTITLED,
         FREE_SCAN_AVAILABLE,
         FREE_SCANS_EXHAUSTED,
+        BONUS_SCAN_AVAILABLE,
         CREDIT_AVAILABLE,
         NO_CREDITS,
     }
@@ -45,9 +46,11 @@ object BillingGate {
         isPro: Boolean,
         scanCountThisMonth: Int,
         creditBalance: Int,
+        bonusScans: Int = 0,
     ): Decision = when {
         isPro -> Decision.Allow(Reason.PRO_ENTITLED)
         scanCountThisMonth < FREE_SCANS_PER_MONTH -> Decision.Allow(Reason.FREE_SCAN_AVAILABLE)
+        bonusScans > 0 -> Decision.Allow(Reason.BONUS_SCAN_AVAILABLE)
         creditBalance > 0 -> Decision.Allow(Reason.CREDIT_AVAILABLE)
         else -> Decision.Paywall(Reason.FREE_SCANS_EXHAUSTED)
     }

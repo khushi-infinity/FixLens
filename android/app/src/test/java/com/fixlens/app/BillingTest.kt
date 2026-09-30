@@ -87,6 +87,13 @@ class BillingTest {
     }
 
     @Test
+    fun `bonus scan covers a scan at the allowance before credits are touched`() {
+        val d = BillingGate.evaluateScan(isPro = false, scanCountThisMonth = 3, creditBalance = 0, bonusScans = 1)
+        assertTrue(d is BillingGate.Decision.Allow)
+        assertEquals(BillingGate.Reason.BONUS_SCAN_AVAILABLE, (d as BillingGate.Decision.Allow).reason)
+    }
+
+    @Test
     fun `month key is a calendar month`() {
         // 2026-09-29T00:00:00Z in UTC
         assertEquals("2026-09", BillingGate.monthKey(1790707200000L, java.time.ZoneId.of("UTC")))
@@ -299,5 +306,43 @@ class BillingTest {
         repo.consumeCredit()
         drain()
         assertEquals(0, repo.state.value.creditBalance)
+    }
+
+    @Test
+    fun `bonus scan unlocks a scan at the limit and is spent once`() = runTest(dispatcher) {
+        repo.syncFromRevenueCat()
+        drain()
+        repo.recordScan()
+        repo.recordScan()
+        repo.recordScan()
+        drain()
+        assertTrue(repo.evaluateScan() is BillingGate.Decision.Paywall)
+
+        repo.grantBonusScan()
+        drain()
+        val allow = repo.evaluateScan()
+        assertEquals(
+            BillingGate.Reason.BONUS_SCAN_AVAILABLE,
+            (allow as BillingGate.Decision.Allow).reason,
+        )
+
+        repo.consumeBonusScan()
+        drain()
+        assertTrue(repo.evaluateScan() is BillingGate.Decision.Paywall)
+        assertEquals(0, repo.state.value.bonusScans)
+    }
+
+    @Test
+    fun `bonus scans reset when the month rolls over`() = runTest(dispatcher) {
+        storage.state = com.fixlens.app.billing.StoredBillingState(
+            scansThisMonth = 3,
+            allowanceMonth = "2000-01",
+            bonusScans = 2,
+        )
+        repo.grantBonusScan()
+        drain()
+        val s = repo.state.value
+        assertEquals(1, s.bonusScans)
+        assertEquals(0, s.scansThisMonth)
     }
 }
