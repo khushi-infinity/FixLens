@@ -1,24 +1,57 @@
-# FixLens workshop notebook design
+# FixLens — Workshop Design Notes
 
-The Android interface uses a fixed light palette: warm paper (#F5F1E7), cream (#FCF9F2), charcoal (#343A36), terracotta (#995238), sage (#E3E9DF), and dusty lavender (#E2E3EE). Serif headings and readable native sans-serif text work offline and respect Android font scaling. The system bars use dark icons on paper.
+The visual identity: an **illustrated workshop journal** rendered in Compose.
+An AI technician that looks hand-made, not machine-made.
 
-Home prioritizes photo diagnosis, with separate live-camera and assembly entry points. Repair history and Pro remain accessible. The home page scrolls on smaller displays. Diagnosis, repair, assembly, verification, purchase, loading, and error screens share the same colors and notebook surfaces.
+## Palette
 
-`ui/theme/Workshop.kt` provides cached paper grain and the drawn framing guide. `ui/WorkshopCamera.kt` provides shared capture controls for photo, live camera, assembly, verification, and scripted demos. Camera controls sit on opaque paper, with a cream outline backed by charcoal to maintain contrast against the preview. These guides are approximate framing aids, not tracked or detected component positions. The existing diagnosis, safety, billing, capture, and verification logic remains in place.
+Defined once in `android/app/src/main/java/com/fixlens/app/ui/theme/Theme.kt`
+(`FixLensColors`). No screen hardcodes colors outside this object.
 
-## Illustration provenance
+| Name | Hex | Role |
+|---|---|---|
+| Paper | `#F5F1E7` | App background; `paperSurface()` adds deterministic grain flecks |
+| Cream | `#FCF9F2` | Cards, raised surfaces, on-primary text |
+| Ink | `#343A36` | Text and outlines — deep charcoal, never pure black |
+| MutedInk | `#636960` | Secondary text |
+| Terracotta | `#995238` | Primary actions, progress, accents |
+| ClayWash | `#EBD7C8` | Warm tint containers |
+| Sage | `#E3E9DF` | Secondary washes, demo banner, success |
+| SageInk | `#4E6657` | Positive / low-risk text |
+| Lavender | `#E2E3EE` | Tertiary washes |
+| BlueGray | `#586677` | Journal accents |
+| Rule | `#CCCBBE` | Hairline borders and separators |
+| Danger | `#A23E32` | Safety stop, HIGH risk |
+| CameraInk | `#282E2A` | Sketch overlays drawn over the camera |
 
-Created using the built-in image generation tool. App asset: `android/app/src/main/res/drawable-nodpi/workshop_illustration.png`.
+## Typography (`Type.kt`)
 
-Final prompt:
+- **Serif display** (`FontFamily.Serif`) for `display*`, `headline*`,
+  `titleLarge` — editorial "repair manual" voice.
+- **Humanist sans** for everything instructional and functional — friendly,
+  legible, respects accessibility font scaling. System families only: no font
+  downloads, fully offline.
 
-> Use case: illustration-story. Asset type: wide editorial illustration for the home screen of FixLens, a mobile repair field guide. Create a lovingly hand-drawn workshop still life: a small adjustable wrench, a terracotta-handled screwdriver, a few screws and washers, and a simple wooden hinge joint, arranged loosely on pale warm cream paper (#F5F1E7). A lightly sketched curved arrow points to the hinge screw and an imperfect pencil circle surrounds it. Fine charcoal ink outlines with varied pressure, sketchy internal lines, desaturated watercolor washes in terracotta, muted sage, dusty lavender-blue and warm brown, subtle paper grain and painted shadows. Landscape composition, approximately 3:2, generous empty cream margin, isolated still life rather than room. Calm premium illustrated repair manual, tactile and human, simple readable silhouettes. No text, no lettering, no UI, no neon, no glossy effects, no digital gradient, no border.
+## Hand-drawn details (`ui/theme/Workshop.kt`)
 
-## Verification
+- `Modifier.paperSurface()` — deterministic paper-grain flecks (seeded
+  `Random(41)`), cached with `drawWithCache` so it never re-animates.
+- `SketchTarget` — the camera annotation: an irregular ink contour and a
+  pencilled arrow drawn with `Canvas`. Framing aid only; never claims to be a
+  detected component.
+- `CameraPaperBands` — opaque paper strips behind camera controls so
+  charcoal-on-cream stays legible on any scene.
+- `CameraFieldNote` — cream note card with uneven corner radii.
+- Cards across the app use slightly irregular `RoundedCornerShape(r1, r2,
+  r3, r4)` values — subtle imperfection, on purpose.
 
-- Debug APK builds successfully.
-- All 72 JVM tests pass.
-- Android lint completes with zero errors; dependency, obsolete API/check, and unused-resource warnings remain.
-- Emulator screenshots are saved alongside this document for visual review.
+## Icon
 
-No live backend diagnosis or purchase is needed for the scripted visual checks.
+`assets/icon_1024.png` — watercolor paper, sage/lavender/clay washes, a
+sketchy double-ring charcoal lens, terracotta scan arc, dial ticks. Generated
+programmatically; regenerate with the PIL script used for the submission.
+
+## What we deliberately avoid
+
+Neon gradients · glassmorphism · dark-futuristic dashboards · chat bubbles ·
+purple-blue "AI app" color schemes · pure black text · pure white backgrounds.

@@ -1,42 +1,121 @@
 # FixLens
 
-FixLens is a mobile AI technician. Point your phone's camera at something
-broken, stuck, or difficult to assemble: FixLens identifies the object and the
-visible issue, assesses safety, guides the repair step by step, visually
-targets the component, and verifies your work with a follow-up scan.
+**Point. See. Fix.** — a camera-first AI repair companion that looks at the
+world through your camera, tells you what it sees and whether it's safe to
+touch, walks you through the repair step by step, marks exactly where to look
+with a hand-drawn target on the live view, and verifies your work with a
+follow-up scan before letting you move on.
 
-> **Status: Phase 8 (final polish) — COMPLETE · app v0.8.0-phase8 · backend v0.6.0**
+FixLens is a mobile AI technician — deliberately **not** a chatbot. There is
+no free-text surface anywhere in the app: the camera does the asking.
+
+| Home | Diagnosis | Show Me (live target) | Guided step |
+|---|---|---|---|
+| ![Home](docs/design/home.png) | ![Diagnosis](docs/design/diagnosis.png) | ![Show Me](docs/design/show-me.png) | ![Guided repair](docs/design/guided-repair.png) |
+
+> **Status:** all build phases complete · app `v0.8.0-phase8` · backend `v0.6.0`
+> · backend tests **109/109** · Android tests **72/72** · lint clean
 >
-> **Visual identity:** an illustrated workshop-journal look — warm paper background, charcoal ink, terracotta and sage watercolor washes, serif editorial headings, and sketchy hand-drawn target overlays on the camera view.
-> The full camera-first loop works end to end: a photo captured in the app
-> travels to the FastAPI backend, through the Gemini/OpenRouter vision
-> providers, and back as a validated, safety-gated diagnosis (**I SEE** →
-> **POSSIBLE ISSUE** → **WHAT I FOUND** → **CONFIDENCE** → **SAFETY**).
-> **Start Fix** turns it into a structured, step-by-step guided repair with
-> **Show Me** visual targeting and **camera verification of every step**
-> (PASS / INCOMPLETE / UNCERTAIN — never a success claim without visual
-> evidence). HIGH risk is blocked before any generation; MEDIUM requires an
-> explicit safety acknowledgement. **RevenueCat monetization** gates scans
-> (3 free/month), guided repair, and assembly behind the `fixlens_pro`
-> entitlement, subscriptions, or one-time repair packs — real purchase state
-> only, with Restore. **Demo Mode** offers three deterministic scripted
-> journeys (stuck chair, assembly, wiring safety stop) on the real camera,
-> permanently badged "DEMO MODE — scripted result, not live AI", for a
-> network-risk-free product demo. Camera shutters, progress, and state
-> transitions are polished and animated; slow free-tier AI is communicated
-> honestly with retry affordances everywhere.
+> **Visual identity:** an illustrated workshop-journal look — warm paper
+> background with subtle grain, charcoal ink, terracotta and sage watercolor
+> washes, serif editorial headings over a humanist sans body, and sketchy
+> hand-drawn target overlays drawn directly onto the camera view.
 
-## The core loop (spec)
+---
+
+## What FixLens does
+
+The full camera-first loop works end to end on device:
+
+1. **Observe** — *Scan a photo* or *Live camera*: a photo captured in the app
+   travels to the FastAPI backend, through the Gemini/OpenRouter vision
+   providers. Poor images (dark, blank, too small) are rejected by a quality
+   gate **before** any AI quota is spent.
+2. **Understand** — the diagnosis renders as a field-note layout:
+   **I SEE** → **POSSIBLE ISSUE** → **WHAT I FOUND** (observed vs inferred
+   components) → **CONFIDENCE** (controlled band, never a fake percentage) →
+   **SAFETY** (deterministic policy, not model opinion).
+3. **Instruct** — *Start Fix* generates a structured plan once per session:
+   numbered steps with **DO THIS**, **TOOL**, **CAREFUL**, and
+   **WHAT YOU SHOULD SEE AFTER** cards.
+4. **Target** — **Show Me** overlays a sketchy ink contour and pencilled
+   arrow on the live camera, marking where to look and what to move or
+   tighten — like an instructor's pencil on your view of the world.
+5. **Verify** — every step can be proven with a fresh camera scan:
+   **PASS / INCOMPLETE / UNCERTAIN** (+ evidence). Only PASS advances a step;
+   the app never claims success without visual evidence, and UNCERTAIN always
+   carries exactly one specific better-view instruction.
+6. **Refuse unsafe work** — HIGH-risk diagnoses produce a **safety stop**
+   before any generation: no steps, no workarounds, just the hazard, the
+   reason, and a referral to a licensed professional.
+
+### Also on board
+
+- **Assembly mode** — photograph disassembled parts and get an ordered build
+  plan (parts list + steps), or an explicit *"I can't determine the order
+  yet"* naming the one view that would settle it. Order is never guessed.
+- **Demo Mode** — three deterministic scripted journeys (stuck office chair,
+  furniture assembly, unsafe electrical wiring) on the real camera,
+  permanently badged **"DEMO MODE — scripted result, not live AI"**, for a
+  network-risk-free product demo. Nothing captured in Demo Mode is analyzed
+  or stored.
+- **My repairs** — a workshop journal of past scans and repairs.
+- **Monetization** — RevenueCat-gated guided repair/assembly/verification
+  with real purchase state (never faked or cached), Restore, and an honest
+  "not configured" state when no key is present.
+
+| Verification | Completion | Safety stop | Paywall | Demo picker | Assembly |
+|---|---|---|---|---|---|
+| ![Verify](docs/design/verify.png) | ![Completion](docs/design/completion.png) | ![Safety stop](docs/design/safety-stop.png) | ![Paywall](docs/design/paywall.png) | ![Demo picker](docs/design/demo-picker.png) | ![Assembly](docs/design/assembly.png) |
+
+More captures live in [`docs/design/`](docs/design/): camera capture screen
+with the sketch ring (`camera.png`), large-text accessibility check
+(`home-large-text.png`).
+
+---
+
+## Visual identity — the watercolor workshop
+
+FixLens avoids the standard purple-blue "AI app" look on purpose. The
+interface is an illustrated field guide: warm paper, charcoal ink, watercolor
+washes, hand-drawn annotations, editorial typography. Palette (from
+`android/.../ui/theme/Theme.kt`):
+
+| Swatch | Name | Hex | Used for |
+|---|---|---|---|
+| 🟨 | Paper | `#F5F1E7` | App background (with subtle grain flecks) |
+| ⬜ | Cream | `#FCF9F2` | Cards and raised surfaces |
+| ⬛ | Ink | `#343A36` | Primary text and outlines (never pure black) |
+| | Muted ink | `#636960` | Secondary text |
+| 🟫 | Terracotta | `#995238` | Primary actions, progress, accents |
+| | Clay wash | `#EBD7C8` | Warm tint containers |
+| 🟩 | Sage | `#E3E9DF` | Secondary washes, success, demo banner |
+| | Sage ink | `#4E6657` | Low-risk / positive text |
+| 🟪 | Lavender | `#E2E3EE` | Tertiary washes |
+| | Blue gray | `#586677` | Journal accents |
+| | Rule | `#CCCBBE` | Hairline separators and card borders |
+| 🟥 | Danger | `#A23E32` | Safety stop, HIGH risk |
+| | Camera ink | `#282E2A` | Sketch overlays on the camera view |
+
+Typography pairs a **serif display** family (headings: warm, editorial,
+"repair manual") with a **humanist sans-serif** body — both system families,
+so the app stays offline-safe and respects accessibility font scaling.
+Hand-drawn details are real code, not images: `Workshop.kt` draws the paper
+grain, sketchy ink contours, and pencilled arrows with Compose `Canvas`.
+
+---
+
+## The core loop
 
 ```
 OBSERVE -> UNDERSTAND -> SAFETY DECISION -> INSTRUCT -> USER ACTS -> VERIFY -> NEXT STEP
 ```
 
 The camera is the primary interface — FixLens is deliberately not a chatbot.
-Phases 2–4 implement OBSERVE → UNDERSTAND → SAFETY → INSTRUCT → USER ACTS →
-NEXT STEP. VERIFY is Phase 5: the repair engine already exposes the seam
-(`RepairStepState`, `VerificationResult`) and the step flow stops at an
-honest "All guided steps completed." — it never claims the repair was verified.
+The loop is enforced end to end: the diagnosis layout mirrors it, the guided
+repair drives it, and the completion screen stops at an honest
+*"All guided steps completed — steps were checked with your camera where you
+chose to. Double-check the repair yourself before relying on it."*
 
 ## Architecture
 
@@ -47,7 +126,7 @@ Android (Kotlin, Jetpack Compose, Material 3, CameraX)
    │  POST /api/v1/plan       (validated diagnosis JSON → repair plan)
    │  POST /api/v1/assembly   (parts photo → assembly plan)
    │  POST /api/v1/verify     (fresh capture + step expected state →
-   │                           PASS / FAIL / UNCERTAIN verification)
+   │                           PASS / INCOMPLETE / UNCERTAIN verification)
    ▼
 FastAPI backend (Python)
    ├─ image validation + quality gate (dark/blank/too-small rejected)
@@ -71,9 +150,11 @@ CAREFUL · WHAT YOU SHOULD SEE AFTER · [I've Done This] [Show Me] [Why?]
   with `GeminiProvider` and `OpenRouterProvider`. Selection is configuration
   only (`AI_PROVIDER`, `AI_FALLBACK_PROVIDER`); model IDs are configurable
   candidate lists (first model that answers wins).
-- **Safety policy** (`backend/app/safety.py`): deterministic keyword gate that
-  can escalate the model's assessment; HIGH risk always produces a
-  SAFETY_STOP and discards actionable instructions.
+- **Safety policy** (`backend/app/safety.py`): deterministic keyword gate
+  that can escalate the model's assessment; HIGH risk always produces a
+  SAFETY_STOP and discards actionable instructions. It runs **before** any
+  plan generation — verified live with zero model invocations on blocked
+  requests (see `FIXLENS_PROGRESS.md`).
 - **Secrets stay server-side.** AI keys live only in `backend/.env`
   (git-ignored). The Android app never sees a provider key.
 
@@ -83,10 +164,14 @@ CAREFUL · WHAT YOU SHOULD SEE AFTER · [I've Done This] [Show Me] [Why?]
 /android    Android app (Kotlin + Jetpack Compose + Material 3 + CameraX)
 /backend    FastAPI service: /health, /api/v1/diagnose, /api/v1/plan,
             /api/v1/assembly, /api/v1/verify
-/docs       DEVICE_SETUP.md — physical-device runbook
-/assets     Branding/demo materials
-FIXLENS_MASTER_BUILD_SPEC.md   Single source of truth
-FIXLENS_PROGRESS.md            Phase-by-phase build log
+/docs       DEVICE_SETUP.md (device runbook) · design/ (screenshots),
+            WORKSHOP_DESIGN.md (visual identity notes)
+/assets     icon_1024.png — 1024×1024 app icon (watercolor lens mark)
+FIXLENS_MASTER_BUILD_SPEC.md   Single source of truth (product spec)
+FIXLENS_PROGRESS.md            Phase-by-phase build log + final audit
+FIXLENS_ARCHITECTURE.md        Historical Phase-1 architecture plan
+DEVPOST_SUBMISSION.md          Shipaton 2026 submission content
+LICENSE                        MIT
 ```
 
 ## Device configuration
@@ -133,26 +218,32 @@ production build.
    debugging → `adb reverse tcp:8000 tcp:8000` → device config → installDebug).
    Android Studio: open `android/` and press Run.
 
-3. **Test the AI pipeline** — in the app: *Scan a Photo* → capture anything →
+3. **Try it without any setup** — on Home, tap **"Curious? Try a guided
+   demo"** and pick a scenario. Demo Mode needs no backend, no keys, and no
+   network: it walks the real product screens (diagnosis → guided steps →
+   camera verification → completion) with pre-authored results, honestly
+   badged on every screen. The wiring scenario demonstrates the safety stop.
+
+4. **Test the live AI pipeline** — *Scan a Photo* → capture anything →
    *Use image* → the diagnosis screen appears with the real analysis. If the
    photo is too dark, blank, or blurry, FixLens asks for a better image
    before spending any AI quota; if the evidence is insufficient, the result
-   shows **I NEED A BETTER VIEW** with a specific camera instruction.
+   shows **I NEED A BETTER VIEW** with a specific camera instruction. On
+   free-tier vision models a scan can take up to two minutes — the app says
+   so and offers retries.
 
-4. **Test guided repair (Phase 4)** — on a GUIDE/LOW-risk diagnosis, tap
-   *Start Fix*: the plan is generated once, then the step screen appears with
-   *I've Done This*, *Show Me* (live camera + pulsing target ring + the
-   instruction), *Why?*, and *I can't do this* (skip with an explicit
-   dialog). Completing every step shows "All guided steps completed." —
-   Phase 4 does not verify the repair. MEDIUM-risk diagnoses show a
-   BEFORE YOU START acknowledgement gate first. HIGH-risk diagnoses show the
-   safety stop and never offer Start Fix.
+5. **Test guided repair** — on a GUIDE/LOW-risk diagnosis, tap *Start Fix*:
+   the plan is generated once, then each step offers *I've Done This*,
+   *Show Me* (live camera + sketchy target ring + the instruction), *Why?,
+   and *I can't do this* (skip with an explicit dialog). Steps can be
+   verified with a camera scan (PASS / INCOMPLETE / UNCERTAIN). MEDIUM-risk
+   diagnoses show a BEFORE YOU START acknowledgement gate first. HIGH-risk
+   diagnoses show the safety stop and never offer Start Fix.
 
-5. **Test assembly mode (Phase 4)** — *Assemble Something* → photograph
-   disassembled parts → *Get assembly steps*: either an ordered plan (parts
-   list + numbered steps) or an explicit "I can't determine the order yet"
-   screen naming the one view that would settle the order — the order is
-   never guessed.
+6. **Test assembly mode** — *Assembly* → photograph disassembled parts →
+   *Get assembly steps*: either an ordered plan (parts list + numbered steps)
+   or an explicit "I can't determine the order yet" screen naming the one
+   view that would settle the order — the order is never guessed.
 
 ## Environment variables (`backend/.env`)
 
@@ -168,19 +259,36 @@ production build.
 
 Never commit `.env`. `.gitignore` already excludes it.
 
+## Monetization (RevenueCat)
+
+| Product | Type | Price |
+|---|---|---|
+| `fixlens_monthly` | Subscription | $7.99 / month |
+| `fixlens_annual` | Subscription | $59.99 / year |
+| `fixlens_repair_pack_5` | One-time pack | $3.99 |
+| `fixlens_repair_pack_10` | One-time pack | $6.99 |
+
+All products unlock the `fixlens_pro` entitlement. Free plan: **3 scans per
+month**. Safety information is never paywalled — everyone gets the full
+diagnosis including the safety assessment; Pro gates the *work* (guided
+repair, Show Me, verification, assembly). Purchase state is real RevenueCat
+state, never faked or cached, with Restore and an honest "not configured"
+state. Credits from repair packs are granted exactly once per transaction.
+
 ## Tests
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -v   # 83 tests (offline)
-cd android && ./gradlew :app:testDebugUnitTest       # 35 tests (JVM + MockWebServer)
-cd android && ./gradlew :app:lintDebug               # lint
+cd backend && .venv/bin/python -m pytest tests/ -v   # 109 tests (offline)
+cd android && ./gradlew :app:testDebugUnitTest       # 72 tests (JVM + MockWebServer)
+cd android && ./gradlew :app:assembleDebug :app:lintDebug   # build + lint (zero warnings)
 ```
 
 Backend endpoint tests inject fake providers — no API quota is consumed by
-the test suite. Live AI verification is performed explicitly (see
-`FIXLENS_PROGRESS.md`).
+the test suite. Live AI verification and full emulator E2E runs (including
+the safety stop and the demo-driven guided loop) are recorded in
+`FIXLENS_PROGRESS.md`.
 
-## Current status
+## Build status
 
 - ✅ Phase 1: Android foundation (navigation, Photo/Live camera, permissions,
   My Repairs), FastAPI `/health`, adb-reverse device connectivity
@@ -194,39 +302,38 @@ the test suite. Live AI verification is performed explicitly (see
 - ✅ Phase 4: guided repair + assembly — structured repair plans
   (`POST /api/v1/plan`, generated once per session), safety-before-generation
   gate (HIGH blocked, MEDIUM acknowledgement), pure-Kotlin repair state
-  machine, step-by-step guidance screen, Show Me pulsing-target overlay,
-  honest tool identification, difficult-step skip flow, assembly mode with
-  order-uncertainty handling; verified live (real planner calls, all blocked
-  paths) and end-to-end on the emulator including step-through to completion
+  machine, step-by-step guidance screen, Show Me target overlay, honest tool
+  identification, difficult-step skip flow, assembly mode with
+  order-uncertainty handling
 - ✅ Phase 5: camera-based verification — `POST /api/v1/verify` compares a
-  fresh capture against a step's expected state (PASS/FAIL/UNCERTAIN +
-  evidence; UNCERTAIN always carries exactly one better-view instruction;
-  PASS never guessed without visual evidence). One user-triggered frame per
-  verification, never a stream. Result mapped onto the repair engine's
-  verification seam: only PASS advances a step, FAIL/UNCERTAIN keep it open;
-  the user may skip verification for a step (their own confirmation then
-  completes it — never worded as verified); verified live (real Gemini:
-  PASS/FAIL/UNCERTAIN + quality-gate rejection) and end-to-end on the
-  emulator (verify → FAIL evidence → return to step, engine state intact)
+  fresh capture against a step's expected state (PASS / INCOMPLETE /
+  UNCERTAIN + evidence; UNCERTAIN always carries exactly one better-view
+  instruction; PASS never guessed without visual evidence). Only PASS
+  advances a step; the user may skip verification (their own confirmation
+  then completes it — never worded as verified)
 - ✅ Phase 6: RevenueCat monetization — real RevenueCat SDK with Test Store
-  support, `fixlens_pro` entitlement checked against live purchase state
-  (never faked or cached), paywall with Pro monthly/annual from real
-  offerings + one-time Repair Pack 5/10 + restore purchases, free plan of
-  3 scans/month with credits granted exactly once per pack transaction.
-  Gating is woven into the flow: camera UI always usable, allowance charged
-  only after the backend accepts an image, guided repair/assembly gate
-  before generation and resume after unlock, honest "not configured" state
-  on devices without a key. API key is a developer-provided device config
-  value (`revenuecat.api_key`), never compiled in
-- ⏳ Next (Phase 5): visual verification of completed steps (the engine's
-  READY_FOR_VERIFICATION phase is the plug-in seam), then monetization
-  (RevenueCat) and Demo Mode
+  support, `fixlens_pro` entitlement checked against live purchase state,
+  paywall with Pro monthly/annual + one-time Repair Packs + Restore, free
+  plan of 3 scans/month, gating woven into the flow with resume-after-unlock
+- ✅ Phase 7: Demo Mode — three deterministic scripted journeys on the real
+  camera, permanently badged "DEMO MODE — scripted result, not live AI",
+  network-risk-free; demo picker + router + honest banners on every screen
+- ✅ Phase 8: final polish — animations (entrances, safety-icon pop, progress,
+  `animateContentSize`), accessible semantics on shutters and controls,
+  large-text check, zero-warning lint
+- ✅ Phase 9: final audit — backend 109/109, Android 72/72, live E2E on the
+  emulator (real Gemini diagnosis, safety stop with zero model calls, demo
+  guided loop), secrets scan clean, submission assets prepared
+- ✅ Visual identity: watercolor workshop-journal restyle — paper/ink palette,
+  serif editorial typography, hand-drawn Canvas details, verified by build,
+  tests, and emulator E2E + screenshots
 
 ## Known limitations
 
 - Free-tier AI quotas (Gemini daily cap; OpenRouter per-model free pools) can
   rate-limit analysis at busy times — the app shows an honest error and the
-  request can be retried.
+  request can be retried. Latency of 46–150 s per scan is normal on free
+  tiers and is communicated in the UI.
 - The model can misjudge unusual photos; the deterministic safety layer can
   escalate but cannot make the model see things the image does not show.
 - The safety corpus matches hazard phrases, not meaning: a NEGATED sentence
@@ -234,6 +341,19 @@ the test suite. Live AI verification is performed explicitly (see
   false blocks are safer than missed hazards).
 - Show Me targets are approximate: the ring marks where to look in frame;
   there is no per-frame component tracking (and no per-frame AI calls).
-- Phase 4 does not verify completed steps — completion says so explicitly.
 - Physical-phone verification of the full flow is still pending (all device
   verification so far ran on the API 35 emulator).
+
+## Hackathon submission (RevenueCat Shipaton 2026)
+
+- **Repo:** https://github.com/khushi-infinity/FixLens
+- **App icon (1024×1024, uncropped):** [`assets/icon_1024.png`](assets/icon_1024.png)
+- **Frameless screenshots:** [`docs/design/`](docs/design/)
+- **Submission copy** (elevator pitch, tagline, project story, and draft
+  answers for every award field): [`DEVPOST_SUBMISSION.md`](DEVPOST_SUBMISSION.md)
+- Awards targeted: Build in Public · HAMM (monetization) · RevenueCat Peace
+  Prize · RevenueCat Design Award · Next Gen (student)
+
+## License
+
+[MIT](LICENSE)
