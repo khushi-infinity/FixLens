@@ -43,9 +43,24 @@ echo "== 4. Writing device config =="
 sleep 3
 "$ADB" -s "$DEV" shell am force-stop com.fixlens.app
 "$ADB" -s "$DEV" shell run-as com.fixlens.app mkdir -p files
-echo "backend.url=http://127.0.0.1:8000" | "$ADB" -s "$DEV" shell "run-as com.fixlens.app sh -c 'cat > files/fixlens.properties'"
+# backend.url is required for live scans; the RevenueCat Test Store key is
+# optional but needed for real purchase state (paywall stays unconfigured
+# without it). The key is read from the git-ignored backend/.env so it is
+# never committed.
+ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/backend/.env"
+RC_KEY=""
+if [ -f "$ENV_FILE" ]; then
+  RC_KEY=$(grep -E '^REVENUECAT_API_KEY=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '[:space:]"')
+fi
+{
+  echo "backend.url=http://127.0.0.1:8000"
+  if [ -n "$RC_KEY" ]; then echo "revenuecat.api_key=$RC_KEY"; fi
+} | "$ADB" -s "$DEV" shell "run-as com.fixlens.app sh -c 'cat > files/fixlens.properties'"
 echo "== verify =="
 "$ADB" -s "$DEV" shell run-as com.fixlens.app cat files/fixlens.properties
+if [ -z "$RC_KEY" ]; then
+  echo "NOTE: no REVENUECAT_API_KEY in backend/.env, purchases stay unconfigured on this device."
+fi
 
 echo "== 5. Launching FixLens =="
 "$ADB" -s "$DEV" shell am start -n com.fixlens.app/.MainActivity

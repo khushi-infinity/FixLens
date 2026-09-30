@@ -92,8 +92,9 @@ private fun FixLensNavHost(
     val planBadge: String? = when {
         !billingState.configured -> null
         billingState.isPro -> "FIXLENS PRO"
-        else -> "${billingState.freeScansRemaining} free scan" +
-            if (billingState.freeScansRemaining == 1) "" else "s" + " left"
+        else ->
+            "${billingState.freeScansRemaining} free scan" +
+                (if (billingState.freeScansRemaining == 1) "" else "s") + " left"
     }
 
     NavHost(navController = navController, startDestination = Routes.HOME) {
