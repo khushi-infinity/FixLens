@@ -55,6 +55,11 @@ The full camera-first loop works end to end on device:
 6. **Refuse unsafe work**, HIGH-risk diagnoses produce a **safety stop**
    before any generation: no steps, no workarounds, just the hazard, the
    reason, and a referral to a licensed professional.
+7. **Tell it what's wrong (optional)**, on the capture review screen you can
+   type a symptom or tap a chip ("Loose", "Wobbly", "Stuck", "Not turning",
+   "Missing part"). The camera stays the evidence: the backend treats your
+   text as the user's report to focus the analysis, never as proof, and the
+   diagnosis still says what the image actually shows.
 
 ### Also on board
 
@@ -68,16 +73,20 @@ The full camera-first loop works end to end on device:
   or stored.
 - **My repairs**, a workshop journal of past scans and repairs.
 - **Monetization**, RevenueCat-gated guided repair/assembly/verification
-  with real purchase state (never faked or cached), Restore, and an honest
-  "not configured" state when no key is present.
+  with real purchase state (never faked or cached), Restore, an honest
+  "not configured" state when no key is present, and ONE opt-in rewarded
+  ad placement: a free user out of scans may watch a short ad for one
+  bonus scan, never for Pro, never for safety information.
 
 | Verification | Completion | Safety stop | Paywall | Demo picker | Assembly |
 |---|---|---|---|---|---|
 | ![Verify](docs/design/verify.png) | ![Completion](docs/design/completion.png) | ![Safety stop](docs/design/safety-stop.png) | ![Paywall](docs/design/paywall.png) | ![Demo picker](docs/design/demo-picker.png) | ![Assembly](docs/design/assembly.png) |
 
 More captures live in [`docs/design/`](docs/design/): camera capture screen
-with the sketch ring (`camera.png`), large-text accessibility check
-(`home-large-text.png`).
+with the sketch ring (`camera.png`), the capture review screen with the
+optional "What is broken?" symptom input (`review.png`), the rewarded
+bonus-scan offer and its earned state (`rewarded-ad.png`), large-text
+accessibility check (`home-large-text.png`).
 
 ---
 
@@ -270,8 +279,9 @@ Never commit `.env`. `.gitignore` already excludes it.
 
 | Product | Type | Price |
 |---|---|---|
-| `fixlens_monthly` | Subscription | $7.99 / month |
-| `fixlens_annual` | Subscription | $59.99 / year |
+| `fixlens_monthly` | Subscription | $9.99 / month |
+| `fixlens_annual` | Subscription | $79.99 / year |
+| `fixlens_lifetime` | One-time | $99.99 |
 | `fixlens_repair_pack_5` | One-time pack | $3.99 |
 | `fixlens_repair_pack_10` | One-time pack | $6.99 |
 

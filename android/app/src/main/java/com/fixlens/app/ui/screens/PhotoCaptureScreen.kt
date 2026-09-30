@@ -11,7 +11,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -20,8 +23,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -42,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fixlens.app.FixLensApp
 import com.fixlens.app.camera.CameraPermissionPhase
@@ -161,6 +168,9 @@ private fun MonetizedCaptureFlow(
                         if (decision.reason == com.fixlens.app.billing.BillingGate.Reason.CREDIT_AVAILABLE) {
                             billing.consumeCredit()
                         }
+                        if (decision.reason == com.fixlens.app.billing.BillingGate.Reason.BONUS_SCAN_AVAILABLE) {
+                            billing.consumeBonusScan()
+                        }
                         billing.recordScan()
                     }
                     else -> { /* raced to exhausted; the next attempt pays */ }
@@ -202,6 +212,9 @@ fun CaptureFlowScreen(
     var backendStatus by remember { mutableStateOf<BackendStatus>(BackendStatus.Idle) }
     var diagnosisResult by remember { mutableStateOf<DiagnoseResponseDto?>(null) }
     var analysisError by remember { mutableStateOf<String?>(null) }
+    // Optional "what is broken" report, flows to /diagnose as user context.
+    // Survives process death and rotation (spec §16 input fidelity).
+    var symptomText by rememberSaveable { mutableStateOf("") }
     val billing = LocalContext.current.applicationContext.let { ctx ->
         (ctx as? com.fixlens.app.FixLensApp)?.appContainer?.billingRepository
     }
@@ -273,16 +286,18 @@ fun CaptureFlowScreen(
             onAction = { permission.openSettings() },
         )
         capturedFile != null -> CapturedImageReview(
-            file = capturedFile!!,
+            file = capturedFile!!, symptomText = symptomText,
             onRetake = {
                 capturedFile?.delete()
                 capturedFile = null
             },
+            onSymptomChange = { symptomText = it },
             onConfirm = {
                 val file = capturedFile
                 if (file == null) {
                     captureError = "No capture to save"
                 } else scope.launch {
+                    val symptom = symptomText.trim().takeIf { it.isNotEmpty() }
                     // Phase 6: allowance check at the moment of spend.
                     val decision = billing?.evaluateScan()
                     if (decision is com.fixlens.app.billing.BillingGate.Decision.Paywall) {
@@ -298,7 +313,7 @@ fun CaptureFlowScreen(
                         val uploadFile = withContext(Dispatchers.IO) {
                             com.fixlens.app.imaging.UploadPrep.prepare(context, file)
                         }
-                        val response = api.diagnose(uploadFile, mode = wireMode)
+                        val response = api.diagnose(uploadFile, mode = wireMode, context = symptom)
                         if (uploadFile != file) uploadFile.delete()
                         file.delete()
                         capturedFile = null
@@ -378,6 +393,8 @@ private fun CameraLivePreview(
 @Composable
 private fun CapturedImageReview(
     file: File,
+    symptomText: String,
+    onSymptomChange: (String) -> Unit,
     onRetake: () -> Unit,
     onConfirm: () -> Unit,
     backendStatus: BackendStatus,
@@ -388,7 +405,7 @@ private fun CapturedImageReview(
                 android.graphics.BitmapFactory.decodeFile(file.absolutePath)
             }
         }
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().fillMaxHeight(0.55f)) {
             val imageBitmap: ImageBitmap? = bitmap?.asImageBitmap()
             if (imageBitmap != null) {
                 Image(
@@ -401,11 +418,16 @@ private fun CapturedImageReview(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
+        SymptomInput(
+            text = symptomText,
+            onTextChange = onSymptomChange,
+            enabled = backendStatus !is BackendStatus.Checking,
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             OutlinedButton(onClick = onRetake, enabled = backendStatus !is BackendStatus.Checking, shape = RoundedCornerShape(10.dp)) {
@@ -434,6 +456,59 @@ private fun CapturedImageReview(
         }
     }
 }
+
+/**
+ * Optional "what is broken" input on the capture review screen. Spec §1 and
+ * §18 keep FixLens camera-first with no chat surface, so this is a bounded,
+ * single-field helper, not a conversation. The backend (prompts.py) treats
+ * the text as the user's report to focus the analysis, never as visual
+ * evidence: if the photo does not support it, the diagnosis says what the
+ * image actually shows.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SymptomInput(
+    text: String,
+    onTextChange: (String) -> Unit,
+    enabled: Boolean,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = onTextChange,
+            enabled = enabled,
+            singleLine = true,
+            label = { Text("What is broken? (optional)") },
+            placeholder = { Text("e.g. the stand screw is loose") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SYMPTOM_CHIPS.forEach { chip ->
+                FilterChip(
+                    selected = text == chip,
+                    enabled = enabled,
+                    onClick = {
+                        onTextChange(if (text == chip) "" else chip)
+                    },
+                    label = {
+                        Text(
+                            text = chip,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** One-tap symptom suggestions, composed with free text on the wire. */
+private val SYMPTOM_CHIPS = listOf("Loose", "Wobbly", "Stuck", "Not turning", "Missing part")
 
 /**
  * Maps typed transport/backend errors to user-appropriate messages.
