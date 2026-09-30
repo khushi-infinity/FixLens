@@ -32,6 +32,13 @@ from .openrouter import OpenRouterProvider
 
 logger = logging.getLogger("fixlens.providers")
 
+# Transient upstream failures (Gemini 503 "high demand", OpenRouter 429
+# rate-limit) clear within seconds. Each provider gets a bounded number of
+# attempts with a linear backoff before the fallback chain moves on, so a
+# demand spike degrades to "slower" instead of "failed".
+PROVIDER_ATTEMPTS = 3
+PROVIDER_BACKOFF_SECONDS = 1.5
+
 
 def _build_provider(name: str) -> AIProvider:
     settings = get_settings()
@@ -49,21 +56,28 @@ def _build_provider(name: str) -> AIProvider:
     raise ProviderUnavailable(f"Unknown provider configured: {name}")
 
 
-def diagnose_with_fallback(
-    image_jpeg: bytes,
-    mode: Mode,
-    user_context: Optional[str] = None,
-) -> tuple[DiagnosisResult, str, int]:
-    """Runs diagnosis on the primary provider, falling back once.
-
-    Returns (diagnosis, provider_name, duration_ms). Raises the last
-    ProviderError if every configured provider fails.
-    """
+def _provider_chain() -> list:
+    """Primary provider + optional fallback, in order."""
     settings = get_settings()
     chain = [settings.ai_provider]
     if settings.ai_fallback_provider and settings.ai_fallback_provider != settings.ai_provider:
         chain.append(settings.ai_fallback_provider)
+    return chain
 
+
+def _run_with_fallback(action, chain, prepare, call, describe=lambda _result: ""):
+    """Shared bounded-retry fallback runner for every AI action.
+
+    For each provider in the chain: build it, prepare the capability
+    (exceptions propagate, matching the old per-endpoint behavior), then call
+    it up to PROVIDER_ATTEMPTS times. ProviderUnavailable (transient upstream
+    failures) is retried with linear backoff, then falls to the next
+    provider. ProviderInvalidResponse is never retried: a second model
+    judging the same payload usually repeats the same judgment problem.
+
+    Returns (result, provider_name, duration_ms). Raises the last
+    ProviderError when every configured provider is exhausted.
+    """
     overall_start = time.monotonic()
     last_error: Optional[ProviderError] = None
 
@@ -76,32 +90,83 @@ def diagnose_with_fallback(
             last_error = exc
             continue
 
-        start = time.monotonic()
-        try:
-            logger.info("provider=%s attempt=1 action=diagnose", provider.name)
-            diagnosis = provider.diagnose(image_jpeg, mode, user_context)
-            duration_ms = int((time.monotonic() - overall_start) * 1000)
-            logger.info(
-                "provider=%s status=validated duration_ms=%d total_duration_ms=%d",
-                provider.name,
-                int((time.monotonic() - start) * 1000),
-                duration_ms,
-            )
-            return diagnosis, provider.name, duration_ms
-        except ProviderUnavailable as exc:
-            logger.warning("provider=%s status=unavailable error=%s", provider_name, exc)
-            last_error = exc
-            if is_last:
-                break
-            logger.info("action=fallback to=%s", chain[index + 1])
-            continue
-        except ProviderInvalidResponse as exc:
-            logger.warning("provider=%s status=invalid_response error=%s", provider_name, exc)
-            last_error = exc
+        # Capability extraction (e.g. planning support). Raises propagate:
+        # a provider that cannot plan is a configuration problem, not a
+        # transient one.
+        action_fn = prepare(provider)
+
+        for attempt in range(1, PROVIDER_ATTEMPTS + 1):
+            start = time.monotonic()
+            try:
+                logger.info(
+                    "provider=%s attempt=%d action=%s", provider.name, attempt, action
+                )
+                result = call(action_fn)
+                duration_ms = int((time.monotonic() - overall_start) * 1000)
+                logger.info(
+                    "provider=%s status=validated action=%s %s duration_ms=%d total_duration_ms=%d",
+                    provider.name,
+                    action,
+                    describe(result),
+                    int((time.monotonic() - start) * 1000),
+                    duration_ms,
+                )
+                return result, provider.name, duration_ms
+            except ProviderUnavailable as exc:
+                logger.warning(
+                    "provider=%s attempt=%d status=unavailable action=%s error=%s",
+                    provider.name,
+                    attempt,
+                    action,
+                    exc,
+                )
+                last_error = exc
+                if attempt < PROVIDER_ATTEMPTS:
+                    delay = PROVIDER_BACKOFF_SECONDS * attempt
+                    logger.info(
+                        "provider=%s action=%s retrying in %.1fs",
+                        provider.name,
+                        action,
+                        delay,
+                    )
+                    time.sleep(delay)
+                    continue
+                break  # attempts exhausted for this provider
+            except ProviderInvalidResponse as exc:
+                logger.warning(
+                    "provider=%s status=invalid_response action=%s error=%s",
+                    provider_name,
+                    action,
+                    exc,
+                )
+                last_error = exc
+                break  # do not retry an invalid payload against the same model
+
+        if is_last:
             break
+        logger.info("action=fallback to=%s", chain[index + 1])
 
     assert last_error is not None
     raise last_error
+
+
+def diagnose_with_fallback(
+    image_jpeg: bytes,
+    mode: Mode,
+    user_context: Optional[str] = None,
+) -> tuple[DiagnosisResult, str, int]:
+    """Runs diagnosis with bounded per-provider retries and fallback.
+
+    Returns (diagnosis, provider_name, duration_ms). Raises the last
+    ProviderError if every configured provider is exhausted.
+    """
+    return _run_with_fallback(
+        action="diagnose",
+        chain=_provider_chain(),
+        prepare=lambda provider: provider,
+        call=lambda provider: provider.diagnose(image_jpeg, mode, user_context),
+        describe=lambda _result: "",
+    )
 
 
 def _capabilities(provider: AIProvider) -> tuple:
@@ -129,14 +194,10 @@ def plan_with_fallback(
     user_context: Optional[str] = None,
 ) -> tuple[RepairPlan, str, int]:
     """Generates a repair plan from a validated diagnosis, with the same
-    bounded fallback as diagnosis. Raises ProviderUnavailable if no provider
-    supports planning; ProviderInvalidResponse propagates (not retried).
+    bounded fallback + retry as diagnosis. Raises ProviderUnavailable if no
+    provider supports planning; ProviderInvalidResponse propagates (not
+    retried).
     """
-    settings = get_settings()
-    chain = [settings.ai_provider]
-    if settings.ai_fallback_provider and settings.ai_fallback_provider != settings.ai_provider:
-        chain.append(settings.ai_fallback_provider)
-
     # The diagnosis is passed to the model as compact JSON, it is the
     # validated, safety-gated schema object, never the raw photo.
     diagnosis_json = json.dumps(
@@ -144,46 +205,17 @@ def plan_with_fallback(
         ensure_ascii=False,
     )
 
-    overall_start = time.monotonic()
-    last_error: Optional[ProviderError] = None
-
-    for index, provider_name in enumerate(chain):
-        is_last = index == len(chain) - 1
-        try:
-            provider = _build_provider(provider_name)
-        except ProviderError as exc:
-            logger.warning("provider=%s not buildable: %s", provider_name, exc)
-            last_error = exc
-            continue
-
+    def prepare(provider):
         plan_fn, _ = _capabilities(provider)
-        start = time.monotonic()
-        try:
-            logger.info("provider=%s attempt=1 action=plan", provider.name)
-            plan = plan_fn(diagnosis_json, user_context)
-            duration_ms = int((time.monotonic() - overall_start) * 1000)
-            logger.info(
-                "provider=%s status=plan_validated steps=%d duration_ms=%d total_duration_ms=%d",
-                provider.name,
-                len(plan.steps),
-                int((time.monotonic() - start) * 1000),
-                duration_ms,
-            )
-            return plan, provider.name, duration_ms
-        except ProviderUnavailable as exc:
-            logger.warning("provider=%s status=unavailable action=plan error=%s", provider_name, exc)
-            last_error = exc
-            if is_last:
-                break
-            logger.info("action=fallback to=%s", chain[index + 1])
-            continue
-        except ProviderInvalidResponse as exc:
-            logger.warning("provider=%s status=invalid_response action=plan error=%s", provider_name, exc)
-            last_error = exc
-            break
+        return plan_fn
 
-    assert last_error is not None
-    raise last_error
+    return _run_with_fallback(
+        action="plan",
+        chain=_provider_chain(),
+        prepare=prepare,
+        call=lambda plan_fn: plan_fn(diagnosis_json, user_context),
+        describe=lambda plan: f"steps={len(plan.steps)}",
+    )
 
 
 def assembly_with_fallback(
@@ -191,53 +223,23 @@ def assembly_with_fallback(
     user_context: Optional[str] = None,
 ) -> tuple[AssemblyPlan, str, int]:
     """Generates an assembly plan from a photo of disassembled parts, with
-    the same bounded fallback as diagnosis."""
-    settings = get_settings()
-    chain = [settings.ai_provider]
-    if settings.ai_fallback_provider and settings.ai_fallback_provider != settings.ai_provider:
-        chain.append(settings.ai_fallback_provider)
+    the same bounded fallback + retry as diagnosis."""
 
-    overall_start = time.monotonic()
-    last_error: Optional[ProviderError] = None
-
-    for index, provider_name in enumerate(chain):
-        is_last = index == len(chain) - 1
-        try:
-            provider = _build_provider(provider_name)
-        except ProviderError as exc:
-            logger.warning("provider=%s not buildable: %s", provider_name, exc)
-            last_error = exc
-            continue
-
+    def prepare(provider):
         _, assembly_fn = _capabilities(provider)
-        start = time.monotonic()
-        try:
-            logger.info("provider=%s attempt=1 action=plan_assembly", provider.name)
-            assembly = assembly_fn(user_context=user_context, image_jpeg=image_jpeg)
-            duration_ms = int((time.monotonic() - overall_start) * 1000)
-            logger.info(
-                "provider=%s status=assembly_validated parts=%d order_confident=%s duration_ms=%d total_duration_ms=%d",
-                provider.name,
-                len(assembly.parts),
-                assembly.order_confident,
-                int((time.monotonic() - start) * 1000),
-                duration_ms,
-            )
-            return assembly, provider.name, duration_ms
-        except ProviderUnavailable as exc:
-            logger.warning("provider=%s status=unavailable action=plan_assembly error=%s", provider_name, exc)
-            last_error = exc
-            if is_last:
-                break
-            logger.info("action=fallback to=%s", chain[index + 1])
-            continue
-        except ProviderInvalidResponse as exc:
-            logger.warning("provider=%s status=invalid_response action=plan_assembly error=%s", provider_name, exc)
-            last_error = exc
-            break
+        return assembly_fn
 
-    assert last_error is not None
-    raise last_error
+    return _run_with_fallback(
+        action="plan_assembly",
+        chain=_provider_chain(),
+        prepare=prepare,
+        call=lambda assembly_fn: assembly_fn(
+            user_context=user_context, image_jpeg=image_jpeg
+        ),
+        describe=lambda assembly: (
+            f"parts={len(assembly.parts)} order_confident={assembly.order_confident}"
+        ),
+    )
 
 
 def verify_with_fallback(
@@ -245,51 +247,15 @@ def verify_with_fallback(
     image_jpeg: bytes,
 ) -> tuple[VerificationResult, str, int]:
     """Verifies one step against a fresh capture, with the same bounded
-    fallback as diagnosis: ProviderUnavailable retries the next configured
-    provider once; ProviderInvalidResponse does not (a second model judging
-    the same image usually repeats the same judgment problem)."""
-    settings = get_settings()
-    chain = [settings.ai_provider]
-    if settings.ai_fallback_provider and settings.ai_fallback_provider != settings.ai_provider:
-        chain.append(settings.ai_fallback_provider)
+    fallback + retry as diagnosis."""
 
-    overall_start = time.monotonic()
-    last_error: Optional[ProviderError] = None
+    def prepare(provider):
+        return _verify_capability(provider)
 
-    for index, provider_name in enumerate(chain):
-        is_last = index == len(chain) - 1
-        try:
-            provider = _build_provider(provider_name)
-        except ProviderError as exc:
-            logger.warning("provider=%s not buildable: %s", provider_name, exc)
-            last_error = exc
-            continue
-
-        verify_fn = _verify_capability(provider)
-        start = time.monotonic()
-        try:
-            logger.info("provider=%s attempt=1 action=verify step=%d", provider.name, request.step_number)
-            result = verify_fn(request, image_jpeg)
-            duration_ms = int((time.monotonic() - overall_start) * 1000)
-            logger.info(
-                "provider=%s status=verify_validated state=%s duration_ms=%d total_duration_ms=%d",
-                provider.name,
-                result.state.value,
-                int((time.monotonic() - start) * 1000),
-                duration_ms,
-            )
-            return result, provider.name, duration_ms
-        except ProviderUnavailable as exc:
-            logger.warning("provider=%s status=unavailable action=verify error=%s", provider_name, exc)
-            last_error = exc
-            if is_last:
-                break
-            logger.info("action=fallback to=%s", chain[index + 1])
-            continue
-        except ProviderInvalidResponse as exc:
-            logger.warning("provider=%s status=invalid_response action=verify error=%s", provider_name, exc)
-            last_error = exc
-            break
-
-    assert last_error is not None
-    raise last_error
+    return _run_with_fallback(
+        action="verify",
+        chain=_provider_chain(),
+        prepare=prepare,
+        call=lambda verify_fn: verify_fn(request, image_jpeg),
+        describe=lambda result: f"state={result.state.value}",
+    )
