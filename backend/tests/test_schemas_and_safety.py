@@ -190,3 +190,30 @@ class TestSafetyPolicy:
         notice, level = apply_safety_policy(parse_diagnosis_payload(payload, Mode.PHOTO, "test"))
         assert level == SafetyLevel.HIGH
         assert notice.decision == SafetyDecision.SAFETY_STOP
+
+    def test_negated_hazard_mention_does_not_escalate(self):
+        """Regression: a reason that lists hazards it did NOT find ('no
+        exposed wires, no structural instabilities visible') must not
+        escalate because the keywords appear inside a negation."""
+        payload = _valid_payload(
+            issue_summary="The television screen shows a rendering artifact.",
+            safety_level="LOW",
+            safety_reason=(
+                "The object is a television displaying a digital pattern; there are "
+                "no physical hazards, exposed wires, or structural instabilities visible."
+            ),
+        )
+        notice, level = apply_safety_policy(parse_diagnosis_payload(payload, Mode.PHOTO, "test"))
+        assert level == SafetyLevel.LOW
+        assert notice.decision == SafetyDecision.GUIDE
+
+    def test_negation_in_one_sentence_does_not_hide_later_hazard(self):
+        """A negation earlier in the corpus must not suppress a real hazard
+        named later in its own sentence."""
+        payload = _valid_payload(
+            issue_summary="No missing parts. The panel has exposed wiring.",
+            safety_level="LOW",
+        )
+        notice, level = apply_safety_policy(parse_diagnosis_payload(payload, Mode.PHOTO, "test"))
+        assert level == SafetyLevel.HIGH
+        assert notice.decision == SafetyDecision.SAFETY_STOP

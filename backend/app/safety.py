@@ -78,8 +78,27 @@ def _preventive_only(corpus: str) -> bool:
     return _matches(corpus, PREVENTIVE_HAZARD_PATTERNS) and not _high_risk_present(corpus)
 
 
+_NEGATION_RE = re.compile(
+    r"\b(no|not|none|without|lacks?|absent|neither|nor|free of|no visible|no sign of)\b",
+    flags=re.IGNORECASE,
+)
+
+
 def _matches(text: str, patterns) -> bool:
-    return any(re.search(p, text, flags=re.IGNORECASE) for p in patterns)
+    """Any pattern match NOT inside a negation. A reason like 'no exposed
+    wiring, no gas leak' mentions hazards to rule them OUT; a naive keyword
+    scan would escalate on the mention alone and freeze the user. Each match
+    is checked against the text since the last sentence boundary: if a
+    negation word precedes it there, that occurrence is skipped (another,
+    non-negated occurrence elsewhere still escalates)."""
+    for p in patterns:
+        for m in re.finditer(p, text, flags=re.IGNORECASE):
+            prefix = text[max(0, m.start() - 80):m.start()]
+            since_last_period = prefix.rsplit(".", 1)[-1]
+            if _NEGATION_RE.search(since_last_period):
+                continue
+            return True
+    return False
 
 
 def apply_safety_policy(diagnosis: DiagnosisResult) -> Tuple[SafetyNotice, SafetyLevel]:
