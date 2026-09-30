@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FixLens</string>
+    <string name="home_tagline">Point your camera at something broken, stuck, or difficult to assemble.</string>
+    <string name="action_scan_photo">Scan a Photo</string>
+    <string name="action_live_camera">Live Camera</string>
+    <string name="action_my_repairs">My Repairs</string>
+    <string name="my_repairs_empty_title">No repairs yet</string>
+    <string name="my_repairs_empty_body">Scans you confirm from Photo or Live Camera mode will appear here once repair guidance exists in a later phase.</string>
+</resources>

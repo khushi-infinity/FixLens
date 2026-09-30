@@ -1,0 +1,36 @@
+# FixLens — never commit secrets or local machine config (spec §5, §20)
+
+# Secret files — real keys live only in untracked env files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Python / FastAPI backend
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Android / Gradle / IntelliJ
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Freebuff local tool state
+.freebuff/
